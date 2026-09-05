@@ -1,0 +1,72 @@
+//go:build windows
+
+package main
+
+import (
+	"errors"
+	"fmt"
+
+	"wfkit-link/internal/config"
+	"wfkit-link/internal/transport"
+)
+
+// loadConfig deliberately reads nothing on this machine.
+//
+// Everything this side needs — which machine to reach, and which border of its
+// screen leads there — arrives from the peer or from the tailnet. Reading a
+// file here would only add a way to be wrong, and it already was: a stale
+// link.yaml naming the old port would silently send the link to a port nobody
+// is listening on, and the symptom would be a connection that never happens
+// with nothing anywhere saying why.
+//
+// --peer and --port remain as escapes for the cases discovery cannot decide.
+func loadConfig() (*config.Config, error) { return nil, nil }
+
+// checkDaemon reports nothing on Windows. The privileged injector runs only on
+// the machine being typed into; this one owns the keyboard and sends.
+func checkDaemon(*config.Config) []check { return nil }
+
+// checkLink dials the peer and says what came back.
+//
+// It is the most useful line in the report on this machine: it distinguishes
+// "the other side is not running" (refused, immediately) from "something is
+// dropping the packets" (timeout) — and a timeout here is the signature of a
+// firewall, which is exactly the failure this direction of connection was
+// chosen to avoid.
+func checkLink(cfg *config.Config, _ string, peer *transport.Peer) []check {
+	if peer == nil {
+		return nil
+	}
+
+	port := portFor(cfg)
+
+	conn, err := transport.Dial(peer.IP, port)
+	if err != nil {
+		return []check{{
+			name:   "peer link",
+			detail: fmt.Sprintf("cannot reach %s:%d: %v", peer.IP, port, err),
+			fix:    dialAdvice(err),
+		}}
+	}
+	closeQuietly(conn)
+	return []check{{
+		name:   "peer link",
+		ok:     true,
+		detail: fmt.Sprintf("%s:%d answered", peer.IP, port),
+	}}
+}
+
+// dialAdvice turns the two failures that actually happen into the two different
+// things to go and do.
+func dialAdvice(err error) string {
+	var timeout interface{ Timeout() bool }
+	if errors.As(err, &timeout) && timeout.Timeout() {
+		return "the peer is reachable but did not answer in time; " +
+			"check that `wfkit-link session` is running there, and that nothing is filtering the port"
+	}
+	return "start `wfkit-link session` on the other machine (`systemctl --user start wfkit-link` on Linux)"
+}
+
+// checkPointer has no counterpart here: this machine's pointer is its own, and
+// nothing injects motion into it.
+func checkPointer() []check { return nil }
