@@ -57,6 +57,15 @@ func (s *session) runPlayback(ctx context.Context, self, peerIP string, port int
 	}
 	defer monitor.Close()
 
+	// Enquanto o som vai para o peer, ele não sai também aqui. O monitor do
+	// sink continua carregando o áudio mesmo mudo — medido —, então isto cala
+	// as caixas sem afetar o que é enviado.
+	if err := monitor.SilenceLocal(); err != nil {
+		fmt.Fprintf(s.out, "audio: could not silence this machine, sound will play in both places: %v\n", err)
+	} else {
+		fmt.Fprintln(s.out, "audio: this machine's speakers muted while the peer is playing")
+	}
+
 	fmt.Fprintf(s.out, "audio: capturing this machine's output, waiting for %s to ask for it\n", peerIP)
 
 	// Closing the socket is what unblocks both loops.

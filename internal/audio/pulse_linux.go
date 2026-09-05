@@ -25,6 +25,7 @@ type Monitor struct {
 	pending []int16 // partial frame, touched only by the PulseAudio callback
 	dropped atomic.Uint64
 	perFrm  int
+	mute    *sinkMute
 }
 
 // OpenMonitor starts capturing the default sink's monitor.
@@ -44,6 +45,9 @@ func OpenMonitor(buffer int) (*Monitor, error) {
 		client: c,
 		frames: make(chan []byte, buffer),
 		perFrm: SamplesPerFrame(Stereo),
+		// O MESMO sink que está sendo capturado. Mutar outro silenciaria a
+		// máquina sem calar o que está sendo enviado.
+		mute: newSinkMute(sink.ID()),
 	}
 
 	m.stream, err = c.NewRecord(
@@ -88,10 +92,22 @@ func (m *Monitor) Frames() <-chan []byte { return m.frames }
 // Dropped counts frames discarded because the consumer fell behind.
 func (m *Monitor) Dropped() uint64 { return m.dropped.Load() }
 
+// SilenceLocal cala as caixas desta máquina enquanto o som está indo para o
+// peer, e devolve o estado anterior no Close.
+//
+// Separado do OpenMonitor de propósito: falhar em mutar não é motivo para
+// derrubar o áudio. O pior caso é o som sair nos dois lugares, que é
+// exatamente onde estávamos antes — e quem chama tem onde dizer isso ao
+// usuário.
+func (m *Monitor) SilenceLocal() error { return m.mute.silence() }
+
 func (m *Monitor) Close() error {
+	// Restaurar primeiro: se o teardown do stream entrar em pânico, o usuário
+	// pelo menos não fica com o notebook mudo.
+	err := m.mute.restore()
 	m.stream.Close()
 	m.client.Close()
-	return nil
+	return err
 }
 
 // Player renders received PCM into a sink. It is fed by a Jitter buffer, so
