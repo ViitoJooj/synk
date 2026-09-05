@@ -63,8 +63,33 @@ func runSession(cmd *cobra.Command, _ []string) error {
 	}
 
 	ts := transport.NewTailscale()
-	self, err := ts.Self()
+
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	out := cmd.OutOrStdout()
+	aviso := func(m string) { fmt.Fprintln(out, m) }
+
+	// Espera o tailscale em vez de sair com erro. Sair fazia o systemd
+	// reiniciar de 5 em 5 segundos enquanto o backend subia — 38
+	// inicializações em 7 dias, medidas no journal, cada uma acordando a CPU
+	// para descobrir que nada mudou.
+	self, err := ts.WaitLocal(ctx, aviso)
 	if err != nil {
+		// SIGTERM durante a espera é parada limpa, não falha: sem isto o
+		// `systemctl stop` marcaria a unit como failed toda vez.
+		if errors.Is(err, context.Canceled) {
+			return nil
+		}
+		return err
+	}
+
+	// Só faz sentido anunciar link quando há com quem falar. O peer continua
+	// listado no tailnet com a máquina desligada, só que com Online falso.
+	if _, err := ts.WaitPeer(ctx, cfg.Peer, aviso); err != nil {
+		if errors.Is(err, context.Canceled) {
+			return nil
+		}
 		return err
 	}
 
@@ -77,14 +102,11 @@ func runSession(cmd *cobra.Command, _ []string) error {
 	}
 	defer l.Close()
 
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
 	go func() {
 		<-ctx.Done()
 		l.Close()
 	}()
 
-	out := cmd.OutOrStdout()
 	fmt.Fprintf(out, "wfkit-link listening on %s:%d for %s, peer screen on the %s\n",
 		self, cfg.Port, cfg.Peer, cfg.EdgeName)
 

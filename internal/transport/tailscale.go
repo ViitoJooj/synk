@@ -7,12 +7,14 @@
 package transport
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"os/exec"
 	"sort"
 	"strings"
+	"time"
 )
 
 var (
@@ -47,14 +49,17 @@ type Tailscale struct {
 	runner Runner
 	// bin is resolved once: on Windows the CLI is usually not on PATH.
 	bin string
+	// sleep is injected so the waiting tests finish instantly instead of
+	// taking the real backoff. See wait.go.
+	sleep func(context.Context, time.Duration) error
 }
 
 func NewTailscale() *Tailscale {
-	return &Tailscale{runner: execRunner{}, bin: tailscaleBinary()}
+	return &Tailscale{runner: execRunner{}, bin: tailscaleBinary(), sleep: realSleep}
 }
 
 func NewTailscaleWithRunner(r Runner) *Tailscale {
-	return &Tailscale{runner: r, bin: "tailscale"}
+	return &Tailscale{runner: r, bin: "tailscale", sleep: realSleep}
 }
 
 // status mirrors the subset of `tailscale status --json` we depend on.
