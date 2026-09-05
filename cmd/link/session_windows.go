@@ -458,7 +458,15 @@ func (s *winSession) takeFocusBack(why string, edge proto.Edge, ratio uint16) {
 	// Instrumento, não enfeite: este caminho só existe no Windows e não pode
 	// ser exercitado daqui. Sem ler de volta, um warp que não pegou é
 	// indistinguível de um que pegou.
-	if ax, ay := inputdev.CursorPos(); ax != x || ay != y {
+	//
+	// A tolerância não é preguiça. ClipCursor num retângulo de 1x1 deixa o
+	// cursor na BORDA do retângulo por onde ele entrou, não no canto de cima
+	// à esquerda: vindo do canto direito, um pedido de x=2 pousa em x=3.
+	// Medido. Um pixel para DENTRO da tela é exatamente o que o inset quer, e
+	// avisar sobre ele em toda travessia esconderia o caso que importa — o
+	// cursor que ficou parado no canto, a mil e novecentos pixels de distância.
+	const desvioTolerado = 8
+	if ax, ay := inputdev.CursorPos(); abs(ax-x) > desvioTolerado || abs(ay-y) > desvioTolerado {
 		fmt.Fprintf(s.out, "cursor asked for (%d,%d) but landed at (%d,%d)\n", x, y, ax, ay)
 	}
 	fmt.Fprintf(s.out, "focus back on this machine: %s\n", why)
@@ -523,4 +531,11 @@ func (s *winSession) applyClipboard(text string) {
 	if err := s.clip.Write(text); err != nil {
 		fmt.Fprintf(s.out, "clipboard write failed: %v\n", err)
 	}
+}
+
+func abs(v int) int {
+	if v < 0 {
+		return -v
+	}
+	return v
 }
