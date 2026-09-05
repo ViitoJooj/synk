@@ -70,6 +70,12 @@ func (j *Jitter) Pop() ([]byte, bool) {
 			return j.silence, false
 		}
 		j.playing = true
+		// Recomeça pelo mais antigo que temos. Sem isto, voltar a tocar depois
+		// de uma fome longa gastaria um Pop de silêncio por número de sequência
+		// pulado — dez segundos de silêncio para uma parada de dez segundos.
+		if o, ok := j.oldest(); ok {
+			j.next = o
+		}
 	}
 
 	j.trim()
@@ -80,10 +86,41 @@ func (j *Jitter) Pop() ([]byte, bool) {
 		return p, true
 	}
 
-	// Nothing for this slot: emit silence and move on, so one lost packet
-	// costs 10 ms of audio rather than permanently shifting the stream.
+	// Buffer VAZIO não é pacote perdido, é fome — e a diferença é a causa do
+	// som que ia ficando cada vez mais picotado.
+	//
+	// Relógios livres de 48 kHz nos dois lados nunca são exatamente iguais.
+	// Quando o receptor é o mais rápido, ele chega ao slot antes do pacote. Se
+	// `next` avançasse aqui, o pacote que está a caminho entraria no Push com
+	// `seq < next` e seria DESCARTADO: cada déficit queimaria um pacote para
+	// sempre, o buffer nunca voltaria a encher, e a proporção de silêncio
+	// cresceria sem parar. Uma catraca.
+	//
+	// Então: não avança, e volta a pré-encher. O custo é uma pausa limitada,
+	// uma vez, em vez de degradação permanente.
+	if j.Depth() == 0 {
+		j.playing = false
+		return j.silence, false
+	}
+
+	// Slot vazio COM pacotes posteriores presentes é perda de verdade: aquele
+	// pacote não vem mais. Avança, para que um perdido custe 10 ms em vez de
+	// travar o fluxo.
 	j.next++
 	return j.silence, false
+}
+
+// oldest é o menor número de sequência guardado. A profundidade é pequena, então
+// a varredura linear sai mais barata que manter um heap.
+func (j *Jitter) oldest() (uint32, bool) {
+	var menor uint32
+	found := false
+	for seq := range j.packets {
+		if !found || seq < menor {
+			menor, found = seq, true
+		}
+	}
+	return menor, found
 }
 
 // trim discards the oldest packets when the queue has outgrown MaxDepth,
@@ -98,18 +135,12 @@ func (j *Jitter) trim() {
 	}
 
 	for j.Depth() > j.cfg.TargetDepth {
-		oldest := j.next
-		found := false
-		for seq := range j.packets {
-			if !found || seq < oldest {
-				oldest, found = seq, true
-			}
-		}
+		velho, found := j.oldest()
 		if !found {
 			return
 		}
-		delete(j.packets, oldest)
-		j.next = oldest + 1
+		delete(j.packets, velho)
+		j.next = velho + 1
 	}
 }
 

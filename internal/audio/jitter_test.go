@@ -186,3 +186,67 @@ func TestPushRejectsWrongSizedFrame(t *testing.T) {
 		t.Errorf("Depth() = %d, want 0 — the malformed frame was accepted", got)
 	}
 }
+
+// Deriva de relógio produz pacote ATRASADO, não perdido. Se o buffer esvazia e
+// mesmo assim avança `next`, todo pacote que chega logo depois entra com
+// `seq < next` e é descartado — uma catraca que nunca destrava. O sintoma
+// relatado foi som "cada vez mais fragmentado conforme o tempo passa".
+func TestBufferVazioNaoQueimaOsPacotesQueEstaoChegando(t *testing.T) {
+	b := newTestBuffer()
+
+	// Enche e toca tudo o que foi enfileirado.
+	for i := 0; i < 4; i++ {
+		b.Push(uint32(i), frame(byte(i)))
+	}
+	for i := 0; i < 4; i++ {
+		if _, real := b.Pop(); !real {
+			t.Fatalf("pop %d devia ser áudio real", i)
+		}
+	}
+
+	// Receptor mais rápido que o remetente: dois pops sem nada no buffer.
+	for i := 0; i < 2; i++ {
+		if _, real := b.Pop(); real {
+			t.Fatalf("pop %d com buffer vazio devia ser silêncio", i)
+		}
+	}
+
+	// Os pacotes atrasados chegam. Eles NÃO podem ser descartados.
+	for i := 4; i < 8; i++ {
+		b.Push(uint32(i), frame(byte(i)))
+	}
+	if b.Depth() != 4 {
+		t.Fatalf("profundidade = %d, quero 4: os atrasados foram queimados", b.Depth())
+	}
+
+	// E o áudio precisa voltar a sair de verdade.
+	var reais int
+	for i := 0; i < 6; i++ {
+		if _, real := b.Pop(); real {
+			reais++
+		}
+	}
+	if reais == 0 {
+		t.Fatal("o buffer nunca se recuperou: só silêncio depois de reabastecer")
+	}
+}
+
+// Pacote genuinamente perdido, com os posteriores já no buffer, continua
+// custando 10 ms e não pode travar o fluxo — o caso oposto do de cima.
+func TestPacotePerdidoComOsSeguintesPresentesNaoTrava(t *testing.T) {
+	b := newTestBuffer()
+	for _, seq := range []uint32{0, 1, 3, 4} { // o 2 nunca chega
+		b.Push(seq, frame(byte(seq)))
+	}
+	for i := 0; i < 2; i++ {
+		if _, real := b.Pop(); !real {
+			t.Fatalf("pop %d devia ser real", i)
+		}
+	}
+	if _, real := b.Pop(); real {
+		t.Fatal("o slot do pacote perdido devia ser silêncio")
+	}
+	if _, real := b.Pop(); !real {
+		t.Fatal("depois do perdido o fluxo devia continuar, não travar")
+	}
+}
