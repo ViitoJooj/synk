@@ -432,14 +432,34 @@ func (s *winSession) takeFocusBack(why string, edge proto.Edge, ratio uint16) {
 	if !s.remoteHasFocus {
 		return
 	}
-	// Order matters: ClipCursor confines SetCursorPos too, so the pin has to go
-	// before the warp or the warp does nothing.
-	s.capture.SetSuppress(false)
-	s.remoteHasFocus = false
-
+	// Warp BEFORE releasing the pin, not after.
+	//
+	// The pin is a 1x1 ClipCursor in the bottom-right corner. ClipCursor
+	// REPLACES a previous clip rather than being blocked by it, so clipping to
+	// the destination both moves the cursor and keeps it held; no release is
+	// needed first.
+	//
+	// Releasing first left the cursor loose in that corner across the window
+	// hide inside SetSuppress, and hiding a window churns foreground. Windows
+	// drops a clip when the process loses activation, so the warp did not
+	// stick and the cursor stayed parked — reported as "it teleports to the
+	// bottom-right corner", which is exactly where the park pin puts it.
+	//
+	// The old ordering was written for SetCursorPos, which IS confined by an
+	// active clip and did need the release. MoveCursorTo stopped using it.
 	x, y := focus.EnterPoint(edge, ratio, s.screenW, s.screenH)
 	if err := inputdev.MoveCursorTo(x, y); err != nil {
 		fmt.Fprintf(s.out, "could not reposition the cursor: %v\n", err)
+	}
+
+	s.capture.SetSuppress(false)
+	s.remoteHasFocus = false
+
+	// Instrumento, não enfeite: este caminho só existe no Windows e não pode
+	// ser exercitado daqui. Sem ler de volta, um warp que não pegou é
+	// indistinguível de um que pegou.
+	if ax, ay := inputdev.CursorPos(); ax != x || ay != y {
+		fmt.Fprintf(s.out, "cursor asked for (%d,%d) but landed at (%d,%d)\n", x, y, ax, ay)
 	}
 	fmt.Fprintf(s.out, "focus back on this machine: %s\n", why)
 }
