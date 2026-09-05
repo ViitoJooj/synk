@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"runtime"
+	"sync"
 	"time"
 	"unsafe"
 
@@ -26,6 +27,13 @@ type Renderer struct {
 	device *wca.IMMDevice
 	enum   *wca.IMMDeviceEnumerator
 
+	// mu serializa TODO acesso ao jitter. Ele e escrito pela goroutine de rede
+	// (Push) e lido pela do laco de render (copyInto), e o Jitter documenta que
+	// nao e seguro para uso concorrente: sem esta trava o runtime derruba o
+	// processo inteiro com "fatal error: concurrent map writes". O Player do
+	// Linux ja fazia assim; este lado nasceu sem, e so apareceu quando alguem
+	// finalmente executou o WASAPI.
+	mu     sync.Mutex
 	jitter *Jitter
 
 	// bufferFrames is the endpoint's buffer in audio frames — samples per
@@ -130,7 +138,11 @@ func ourFormat() *wca.WAVEFORMATEX {
 // The render loop is the only reader, and Jitter is not safe for concurrent
 // use, so this crosses into it through the same channel the loop drains rather
 // than touching it directly.
-func (r *Renderer) Push(seq uint32, pcm []byte) { r.jitter.Push(seq, pcm) }
+func (r *Renderer) Push(seq uint32, pcm []byte) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.jitter.Push(seq, pcm)
+}
 
 // run keeps the endpoint buffer fed.
 //
@@ -202,6 +214,9 @@ func (r *Renderer) fill() error {
 // the buffer, so a starved jitter buffer hands back silence instead — which is
 // what it does for a lost packet too.
 func (r *Renderer) copyInto(dst []byte) int {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	filled := 0
 	for filled < len(dst) {
 		if len(r.pending) == 0 {
@@ -215,7 +230,11 @@ func (r *Renderer) copyInto(dst []byte) int {
 }
 
 // Depth reports the jitter buffer's occupancy, for status output.
-func (r *Renderer) Depth() int { return r.jitter.Depth() }
+func (r *Renderer) Depth() int {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.jitter.Depth()
+}
 
 func (r *Renderer) Close() error {
 	close(r.stop)
