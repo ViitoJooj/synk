@@ -21,7 +21,9 @@
   quando o motivo muda.
 
 .PARAMETER ExePath
-  Caminho do wfkit-link.exe. Padrão: o .exe ao lado deste script.
+  Caminho do wfkit-link.exe. Sem ele, o script procura em ordem: ao lado deste
+  arquivo (é onde os dois caem quando você os manda por Taildrop) e depois na
+  raiz do repositório, dois níveis acima.
 
 .PARAMETER Hidden
   Roda sem janela de console, redirecionando a saída para um arquivo de log ao
@@ -44,7 +46,7 @@
 #>
 [CmdletBinding()]
 param(
-    [string] $ExePath   = (Join-Path $PSScriptRoot '..\..\wfkit-link.exe'),
+    [string] $ExePath,
     [string] $TaskName  = 'wfkit-link',
     [switch] $Hidden,
     [switch] $Elevated
@@ -52,13 +54,31 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-$exe = (Resolve-Path -LiteralPath $ExePath -ErrorAction SilentlyContinue)
-if (-not $exe) {
-    throw "wfkit-link.exe nao encontrado em '$ExePath'. " +
-          "Compile com 'GOOS=windows go build -o wfkit-link.exe ./cmd/link' " +
-          "e passe o caminho em -ExePath."
+# Onde procurar, em ordem. O primeiro caso e o que acontece de verdade quando
+# os dois arquivos chegam juntos por Taildrop: eles ficam LADO A LADO, e nao no
+# layout do repositorio.
+$candidatos = if ($ExePath) {
+    @($ExePath)
+} else {
+    @(
+        (Join-Path $PSScriptRoot 'wfkit-link.exe'),
+        (Join-Path $PSScriptRoot '..\..\wfkit-link.exe'),
+        (Join-Path (Get-Location) 'wfkit-link.exe')
+    )
 }
-$exe = $exe.Path
+
+$exe = $null
+foreach ($c in $candidatos) {
+    $r = Resolve-Path -LiteralPath $c -ErrorAction SilentlyContinue
+    if ($r) { $exe = $r.Path; break }
+}
+
+if (-not $exe) {
+    $tentados = ($candidatos | ForEach-Object { "  $_" }) -join "`n"
+    throw "wfkit-link.exe nao encontrado. Procurei em:`n$tentados`n" +
+          "Passe o caminho em -ExePath, ou compile com " +
+          "'GOOS=windows go build -o wfkit-link.exe ./cmd/link'."
+}
 Write-Host "executavel: $exe"
 
 if ($Hidden) {
