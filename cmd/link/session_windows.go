@@ -82,13 +82,21 @@ func runSession(cmd *cobra.Command, _ []string) error {
 	fmt.Fprintln(out, "wfkit-link is capturing this keyboard and mouse; Ctrl+Alt+F12 always takes them back")
 
 	backoff := minBackoff
+	ultimo := ""
 	for ctx.Err() == nil {
 		err := connectAndServe(ctx, out, capture)
 		if ctx.Err() != nil {
 			return nil
 		}
 
-		fmt.Fprintf(out, "link down: %v; retrying in %s\n", err, backoff)
+		// Só reporta quando o MOTIVO muda. Rodando pela tarefa agendada isto
+		// fica de pé o dia todo: com uma linha por ciclo, um notebook desligado
+		// a noite inteira escreveria a mesma frase mais de mil vezes e
+		// esconderia a única que importa — a mudança de estado.
+		if msg := errText(err); msg != ultimo {
+			ultimo = msg
+			fmt.Fprintf(out, "link down: %s; retrying, backing off to %s\n", msg, maxBackoff)
+		}
 		select {
 		case <-ctx.Done():
 			return nil
@@ -108,6 +116,13 @@ func runSession(cmd *cobra.Command, _ []string) error {
 // errLinkWasEstablished marks an outage that followed a working connection, so
 // the backoff can reset rather than punish a link that merely dropped.
 var errLinkWasEstablished = errors.New("link had been established")
+
+func errText(err error) string {
+	if err == nil {
+		return "no reason given"
+	}
+	return err.Error()
+}
 
 func connectAndServe(ctx context.Context, out io.Writer, capture *inputdev.Capture) error {
 	ts := transport.NewTailscale()

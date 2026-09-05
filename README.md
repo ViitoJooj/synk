@@ -67,12 +67,34 @@ Roda como usuário comum e pede sudo só nos passos que precisam. Ele compila,
 instala em `/usr/local/bin`, cria o grupo que controla o socket, escreve o
 perfil flat do dispositivo virtual e habilita as duas units.
 
+## Instalar no Windows
+
+Copie o `wfkit-link.exe` para o PC — é o único arquivo que precisa ir. Depois,
+num PowerShell:
+
+```powershell
+.\system\windows\install.ps1 -Hidden
+```
+
+Isso registra uma tarefa que inicia o link no seu logon e o reinicia se ele
+morrer. `-Hidden` roda sem janela de console e manda a saída para um `.log` ao
+lado do executável; sem ele, um console fica aberto — feio, mas é onde as
+mensagens aparecem.
+
+**No logon, não no boot:** este lado captura teclado e mouse com hooks de baixo
+nível, que só existem dentro de uma sessão interativa. Uma tarefa "rodar mesmo
+sem o usuário logado" não teria desktop para observar, e ainda pediria sua
+senha guardada.
+
+**Sem privilégio elevado**, porque capturar entrada comum não precisa. O efeito
+colateral é conhecido: janelas rodando como administrador não entregam entrada
+a um processo não elevado. Se isso incomodar, `-Elevated`.
+
+Não é preciso esperar o Tailscale subir antes: o binário consulta o backend e o
+estado do peer, recua de 1s a 30s e só escreve no log quando o motivo muda.
+
 ## O que ainda não existe
 
-- **Autostart no lado Windows.** O `.exe` precisa ser iniciado à mão. Enquanto
-  não houver entrada no Agendador de Tarefas, a conexão não é automática — e
-  isso vale tanto com o Linux escutando quanto discando, porque o processo
-  precisa estar de pé nos dois casos.
 - **Direção do microfone** (Windows → fonte virtual do PipeWire).
 - **WASAPI e a janela de ocultar ponteiro no Windows compilam e passam no vet,
   mas nunca foram executados.** Trate como não comprovado.
