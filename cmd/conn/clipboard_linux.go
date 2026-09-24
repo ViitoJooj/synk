@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"time"
 
-	"wfkit-link/internal/clipboard"
-	"wfkit-link/internal/proto"
+	"conn/internal/clipboard"
+	"conn/internal/proto"
 )
 
 // watchClipboard polls the local clipboard and sends anything genuinely new.

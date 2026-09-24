@@ -3,7 +3,7 @@ package focus
 import (
 	"testing"
 
-	"wfkit-link/internal/proto"
+	"conn/internal/proto"
 )
 
 // The real laptop panel: eDP-1, 1920x1080, scale 1, with the Windows monitor

@@ -19,8 +19,8 @@ import (
 	"os"
 	"sync"
 
-	"wfkit-link/internal/keystate"
-	"wfkit-link/internal/proto"
+	"conn/internal/keystate"
+	"conn/internal/proto"
 )
 
 // socketMode keeps the socket to its owner and group. Opening it means being

@@ -165,7 +165,7 @@ func TestEvdevIoctlConstantsMatchTheKernelHeaders(t *testing.T) {
 func TestIntegrationInjectedEventsAreDeliveredByTheKernel(t *testing.T) {
 	requireRoot(t)
 
-	const devName = "wfkit-link-readback"
+	const devName = "conn-readback"
 	v, err := OpenVirtual(devName)
 	if err != nil {
 		t.Fatalf("OpenVirtual: %v", err)
@@ -213,13 +213,13 @@ func TestIntegrationInjectedEventsAreDeliveredByTheKernel(t *testing.T) {
 func TestIntegrationGrabAndUngrab(t *testing.T) {
 	requireRoot(t)
 
-	v, err := OpenVirtual("wfkit-link-grab")
+	v, err := OpenVirtual("conn-grab")
 	if err != nil {
 		t.Fatalf("OpenVirtual: %v", err)
 	}
 	defer v.Close()
 
-	dev := waitForDevice(t, "wfkit-link-grab", 3*time.Second)
+	dev := waitForDevice(t, "conn-grab", 3*time.Second)
 	defer dev.Close()
 
 	if err := dev.Grab(); err != nil {
@@ -258,7 +258,7 @@ func TestIntegrationListDevicesFindsRealHardware(t *testing.T) {
 // ---- test helpers ----
 
 // waitForDevice polls /dev/input for the node udev creates for our virtual
-// device. ListDevices deliberately hides wfkit-link devices, so the scan here
+// device. ListDevices deliberately hides conn devices, so the scan here
 // is deliberately raw.
 func waitForDevice(t *testing.T, name string, timeout time.Duration) *Device {
 	t.Helper()

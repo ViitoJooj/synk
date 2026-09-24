@@ -36,13 +36,13 @@ func (f *fakeRunner) Run(_ string, args ...string) ([]byte, error) {
 func devices(flat bool) *fakeRunner {
 	return &fakeRunner{props: map[string]string{
 		"event0/name":                            "(<'Power Button'>,)\n",
-		"event12/name":                           "(<'wfkit-link'>,)\n",
+		"event12/name":                           "(<'conn'>,)\n",
 		"event12/pointerAccelerationProfileFlat": fmt.Sprintf("(<%t>,)\n", flat),
 	}}
 }
 
 func TestFlatReportsAFlatProfile(t *testing.T) {
-	got, err := NewWithRunner(devices(true)).Flat("wfkit-link")
+	got, err := NewWithRunner(devices(true)).Flat("conn")
 	if err != nil {
 		t.Fatalf("Flat: %v", err)
 	}
@@ -54,7 +54,7 @@ func TestFlatReportsAFlatProfile(t *testing.T) {
 // The default profile is adaptive, and that is precisely the configuration that
 // makes an injected delta land nearly twice as far as intended.
 func TestFlatReportsTheDefaultAdaptiveProfile(t *testing.T) {
-	got, err := NewWithRunner(devices(false)).Flat("wfkit-link")
+	got, err := NewWithRunner(devices(false)).Flat("conn")
 	if err != nil {
 		t.Fatalf("Flat: %v", err)
 	}
@@ -69,7 +69,7 @@ func TestFlatSaysWhenTheDeviceIsAbsent(t *testing.T) {
 	r := devices(true)
 	delete(r.props, "event12/name")
 
-	_, err := NewWithRunner(r).Flat("wfkit-link")
+	_, err := NewWithRunner(r).Flat("conn")
 	if !errors.Is(err, ErrDeviceNotFound) {
 		t.Fatalf("err = %v, want ErrDeviceNotFound", err)
 	}
@@ -81,7 +81,7 @@ func TestFlatScansPastGapsInTheNumbering(t *testing.T) {
 	r := devices(true)
 	delete(r.props, "event0/name")
 
-	got, err := NewWithRunner(r).Flat("wfkit-link")
+	got, err := NewWithRunner(r).Flat("conn")
 	if err != nil {
 		t.Fatalf("Flat: %v", err)
 	}
@@ -93,9 +93,9 @@ func TestFlatScansPastGapsInTheNumbering(t *testing.T) {
 // A name that merely contains ours is a different device.
 func TestFlatDoesNotMatchOnASubstring(t *testing.T) {
 	r := devices(true)
-	r.props["event12/name"] = "(<'wfkit-link-other'>,)\n"
+	r.props["event12/name"] = "(<'conn-other'>,)\n"
 
-	if _, err := NewWithRunner(r).Flat("wfkit-link"); !errors.Is(err, ErrDeviceNotFound) {
+	if _, err := NewWithRunner(r).Flat("conn"); !errors.Is(err, ErrDeviceNotFound) {
 		t.Fatalf("err = %v, want ErrDeviceNotFound", err)
 	}
 }

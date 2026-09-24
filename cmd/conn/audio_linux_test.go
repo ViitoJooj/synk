@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"wfkit-link/internal/audio"
-	"wfkit-link/internal/transport"
+	"conn/internal/audio"
+	"conn/internal/transport"
 )
 
 // fakeSource stands in for the PipeWire monitor.

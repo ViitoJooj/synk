@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"wfkit-link/internal/focus"
-	"wfkit-link/internal/proto"
+	"conn/internal/focus"
+	"conn/internal/proto"
 )
 
 // fakeInjector records what the session asked the daemon to do, so the whole

@@ -1,4 +1,4 @@
-// Package config loads wfkit-link's settings.
+// Package config loads conn's settings.
 //
 // Only the machine that receives input needs a file: it is the one that knows
 // the screen geometry and which border the peer sits beyond. The other side
@@ -14,7 +14,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"wfkit-link/internal/proto"
+	"conn/internal/proto"
 )
 
 const (
@@ -27,7 +27,7 @@ const (
 	// below the ephemeral range on both Linux (32768+) and Windows (49152+).
 	DefaultPort = 27431
 
-	DefaultSocket = "/run/wfkit-link/daemon.sock"
+	DefaultSocket = "/run/conn/daemon.sock"
 )
 
 type Audio struct {

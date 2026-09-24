@@ -1,10 +1,9 @@
-// Command wfkit-link shares one keyboard, mouse, clipboard and sound system
+// Command conn shares one keyboard, mouse, clipboard and sound system
 // between this machine and a peer on the same tailnet.
 //
-// It is a separate binary rather than a `wfkit` subcommand because
-// skills/cli_commands.md fixes the wfkit command set, and because this one has
-// to cross-compile to Windows, which the wfkit CLI cannot (internal/registry
-// wraps chattr).
+// It began as a subcommand of the wfkit CLI and left to be its own project:
+// it is a two-machine app with its own life cycle, and it has to cross-compile
+// to Windows, which the wfkit CLI cannot.
 package main
 
 import (
@@ -14,10 +13,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"wfkit-link/internal/config"
+	"conn/internal/config"
 )
 
-const configName = "link.yaml"
+const configName = "conn.yaml"
 
 // linkPeer and linkPort override discovery and the default port. They exist for
 // the machine that carries no configuration file, and as an escape hatch when a
@@ -28,7 +27,7 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "wfkit-link",
+	Use:   "conn",
 	Short: "Share keyboard, mouse, clipboard and audio with a machine on your tailnet",
 
 	SilenceUsage:  true,
@@ -44,19 +43,20 @@ func init() {
 
 func main() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintln(os.Stderr, "wfkit-link:", err)
+		fmt.Fprintln(os.Stderr, "conn:", err)
 		os.Exit(1)
 	}
 }
 
-// configDir is ~/.config/wfkit, matching skills/folder_structure.md: per-user
-// preferences live there, never system state.
+// configDir is ~/.config/conn: per-user preferences, never system state.
+// Until the rename it was ~/.config/wfkit/link.yaml; system/install.sh moves
+// an existing one over.
 func configDir() (string, error) {
 	base, err := os.UserConfigDir()
 	if err != nil {
 		return "", fmt.Errorf("locating your config directory: %w", err)
 	}
-	return filepath.Join(base, "wfkit"), nil
+	return filepath.Join(base, "conn"), nil
 }
 
 func configPath() (string, error) {

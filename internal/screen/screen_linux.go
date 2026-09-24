@@ -3,7 +3,7 @@
 // Package screen reads the desktop's geometry from KWin.
 //
 // Wayland gives a background process no way to ask where the cursor is, so
-// wfkit-link integrates pointer deltas against these bounds instead. That makes
+// conn integrates pointer deltas against these bounds instead. That makes
 // the numbers here load-bearing: get the desktop size wrong and the handoff
 // edge lands in the middle of a monitor.
 package screen
@@ -103,7 +103,7 @@ func (r *Reader) Read() (Geometry, error) {
 // `su -` looks perfectly normal, but has dropped XDG_RUNTIME_DIR, so Qt cannot
 // open the Wayland socket and kscreen-doctor aborts.
 func sessionEnvError(runtimeDir, waylandDisplay, x11Display string) error {
-	const fix = "run wfkit-link from your graphical session — log out and back " +
+	const fix = "run conn from your graphical session — log out and back " +
 		"in rather than using `su`, which drops these variables"
 
 	if runtimeDir == "" {

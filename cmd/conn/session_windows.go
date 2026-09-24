@@ -16,11 +16,11 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"wfkit-link/internal/clipboard"
-	"wfkit-link/internal/focus"
-	"wfkit-link/internal/inputdev"
-	"wfkit-link/internal/proto"
-	"wfkit-link/internal/transport"
+	"conn/internal/clipboard"
+	"conn/internal/focus"
+	"conn/internal/inputdev"
+	"conn/internal/proto"
+	"conn/internal/transport"
 )
 
 const (
@@ -46,7 +46,7 @@ var sessionVerbose bool
 var sessionCmd = &cobra.Command{
 	Use:   "session",
 	Short: "Capture this machine's keyboard and mouse and drive the peer with them",
-	Long: `Run the sending half of wfkit-link.
+	Long: `Run the sending half of conn.
 
 This machine owns the physical keyboard and mouse. While the pointer is on this
 screen nothing changes; when it reaches the border the peer sits beyond, input
@@ -79,7 +79,7 @@ func runSession(cmd *cobra.Command, _ []string) error {
 	defer stop()
 
 	out := cmd.OutOrStdout()
-	fmt.Fprintln(out, "wfkit-link is capturing this keyboard and mouse; Ctrl+Alt+F12 always takes them back")
+	fmt.Fprintln(out, "conn is capturing this keyboard and mouse; Ctrl+Alt+F12 always takes them back")
 
 	backoff := minBackoff
 	ultimo := ""

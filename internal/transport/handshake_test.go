@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"wfkit-link/internal/proto"
+	"conn/internal/proto"
 )
 
 // ---- peer authorisation ----

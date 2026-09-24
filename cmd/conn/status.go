@@ -9,8 +9,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"wfkit-link/internal/config"
-	"wfkit-link/internal/transport"
+	"conn/internal/config"
+	"conn/internal/transport"
 )
 
 var statusCmd = &cobra.Command{
@@ -18,7 +18,7 @@ var statusCmd = &cobra.Command{
 	Short: "Show whether the link is ready, and what is missing if not",
 	Long: `Check every part the link depends on and report what is wrong.
 
-Run this before ` + "`wfkit-link session`" + ` whenever something is not working. It
+Run this before ` + "`conn session`" + ` whenever something is not working. It
 answers the questions in the order they matter: is the configuration readable,
 is Tailscale up, is the peer online, is the privileged daemon running, and can
 the two machines actually reach each other.`,
@@ -103,7 +103,7 @@ func checkConfig(cfg *config.Config, err error) check {
 		return check{
 			name:   "config",
 			detail: "not found at " + path,
-			fix:    "write a link.yaml there naming the peer and the edge its screen sits beyond",
+			fix:    "write a conn.yaml there naming the peer and the edge its screen sits beyond",
 		}
 
 	default:

@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 
-	"wfkit-link/internal/config"
-	"wfkit-link/internal/transport"
+	"conn/internal/config"
+	"conn/internal/transport"
 )
 
 // loadConfig deliberately reads nothing on this machine.
@@ -15,7 +15,7 @@ import (
 // Everything this side needs — which machine to reach, and which border of its
 // screen leads there — arrives from the peer or from the tailnet. Reading a
 // file here would only add a way to be wrong, and it already was: a stale
-// link.yaml naming the old port would silently send the link to a port nobody
+// conn.yaml naming the old port would silently send the link to a port nobody
 // is listening on, and the symptom would be a connection that never happens
 // with nothing anywhere saying why.
 //
@@ -62,9 +62,9 @@ func dialAdvice(err error) string {
 	var timeout interface{ Timeout() bool }
 	if errors.As(err, &timeout) && timeout.Timeout() {
 		return "the peer is reachable but did not answer in time; " +
-			"check that `wfkit-link session` is running there, and that nothing is filtering the port"
+			"check that `conn session` is running there, and that nothing is filtering the port"
 	}
-	return "start `wfkit-link session` on the other machine (`systemctl --user start wfkit-link` on Linux)"
+	return "start `conn session` on the other machine (`systemctl --user start conn` on Linux)"
 }
 
 // checkPointer has no counterpart here: this machine's pointer is its own, and

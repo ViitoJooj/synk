@@ -62,7 +62,7 @@ type Capture struct {
 
 // captureClassName is shared by the message-only window and the blanking
 // window: they want the same procedure and the same NULL class cursor.
-const captureClassName = "wfkit-link-capture"
+const captureClassName = "conn-capture"
 
 // Only one Capture can exist per process: the Win32 hook callbacks are plain C
 // function pointers with nowhere to carry a receiver.

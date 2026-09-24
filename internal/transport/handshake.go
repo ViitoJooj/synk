@@ -7,7 +7,7 @@ import (
 	"syscall"
 	"time"
 
-	"wfkit-link/internal/proto"
+	"conn/internal/proto"
 )
 
 const (

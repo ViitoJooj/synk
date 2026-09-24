@@ -1,9 +1,9 @@
 <#
 .SYNOPSIS
-  Registra o wfkit-link para subir sozinho no logon deste PC Windows.
+  Registra o conn para subir sozinho no logon deste PC Windows.
 
 .DESCRIPTION
-  Cria uma tarefa agendada que inicia `wfkit-link.exe session` quando você
+  Cria uma tarefa agendada que inicia `conn.exe session` quando você
   entra na sua conta, e a reinicia se o processo morrer.
 
   Por que no LOGON e não no boot: este lado captura teclado e mouse com hooks
@@ -21,7 +21,7 @@
   quando o motivo muda.
 
 .PARAMETER ExePath
-  Caminho do wfkit-link.exe. Sem ele, o script procura em ordem: ao lado deste
+  Caminho do conn.exe. Sem ele, o script procura em ordem: ao lado deste
   arquivo (é onde os dois caem quando você os manda por Taildrop) e depois na
   raiz do repositório, dois níveis acima.
 
@@ -37,17 +37,17 @@
 .EXAMPLE
   .\install.ps1
   .\install.ps1 -Hidden
-  .\install.ps1 -ExePath C:\Tools\wfkit-link.exe -Hidden
+  .\install.ps1 -ExePath C:\Tools\conn.exe -Hidden
 
 .NOTES
-  Para desfazer:  Unregister-ScheduledTask -TaskName wfkit-link -Confirm:$false
-  Para ver:       Get-ScheduledTask -TaskName wfkit-link | Get-ScheduledTaskInfo
-  Para rodar já:  Start-ScheduledTask -TaskName wfkit-link
+  Para desfazer:  Unregister-ScheduledTask -TaskName conn -Confirm:$false
+  Para ver:       Get-ScheduledTask -TaskName conn | Get-ScheduledTaskInfo
+  Para rodar já:  Start-ScheduledTask -TaskName conn
 #>
 [CmdletBinding()]
 param(
     [string] $ExePath,
-    [string] $TaskName  = 'wfkit-link',
+    [string] $TaskName  = 'conn',
     [switch] $Hidden,
     [switch] $Elevated
 )
@@ -61,9 +61,9 @@ $candidatos = if ($ExePath) {
     @($ExePath)
 } else {
     @(
-        (Join-Path $PSScriptRoot 'wfkit-link.exe'),
-        (Join-Path $PSScriptRoot '..\..\wfkit-link.exe'),
-        (Join-Path (Get-Location) 'wfkit-link.exe')
+        (Join-Path $PSScriptRoot 'conn.exe'),
+        (Join-Path $PSScriptRoot '..\..\conn.exe'),
+        (Join-Path (Get-Location) 'conn.exe')
     )
 }
 
@@ -75,9 +75,9 @@ foreach ($c in $candidatos) {
 
 if (-not $exe) {
     $tentados = ($candidatos | ForEach-Object { "  $_" }) -join "`n"
-    throw "wfkit-link.exe nao encontrado. Procurei em:`n$tentados`n" +
+    throw "conn.exe nao encontrado. Procurei em:`n$tentados`n" +
           "Passe o caminho em -ExePath, ou compile com " +
-          "'GOOS=windows go build -o wfkit-link.exe ./cmd/link'."
+          "'GOOS=windows go build -o conn.exe ./cmd/conn'."
 }
 Write-Host "executavel: $exe"
 
@@ -85,7 +85,7 @@ if ($Hidden) {
     # PowerShell escondido no lugar do console. A saida vai para um arquivo,
     # senao ela se perde por completo — e e nela que aparece por que o link
     # esta fora do ar.
-    $log = Join-Path (Split-Path $exe -Parent) 'wfkit-link.log'
+    $log = Join-Path (Split-Path $exe -Parent) 'conn.log'
     $inner = "& '$exe' session *> '$log'"
     $action = New-ScheduledTaskAction -Execute 'powershell.exe' `
         -Argument "-NoProfile -NonInteractive -WindowStyle Hidden -Command `"$inner`""
@@ -118,9 +118,16 @@ $nivel = if ($Elevated) { 'Highest' } else { 'Limited' }
 $principal = New-ScheduledTaskPrincipal -UserId $conta `
     -LogonType Interactive -RunLevel $nivel
 
+# Nome antigo (wfkit-link, ate 2026-09-24): a tarefa velha subiria o exe
+# velho junto com o novo, e os dois brigariam pela mesma porta.
+if (Get-ScheduledTask -TaskName 'wfkit-link' -ErrorAction SilentlyContinue) {
+    Unregister-ScheduledTask -TaskName 'wfkit-link' -Confirm:$false
+    Write-Host "tarefa antiga 'wfkit-link' removida."
+}
+
 Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger `
     -Settings $settings -Principal $principal -Force `
-    -Description 'Conecta este PC ao notebook Linux (wfkit-link).' | Out-Null
+    -Description 'Conecta este PC ao notebook Linux (conn).' | Out-Null
 
 Write-Host "tarefa '$TaskName' registrada, nivel $nivel."
 Write-Host ""

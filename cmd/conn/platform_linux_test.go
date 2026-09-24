@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"wfkit-link/internal/config"
+	"conn/internal/config"
 )
 
 func cfgWithSocket(path string) *config.Config {

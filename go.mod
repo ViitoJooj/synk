@@ -1,4 +1,4 @@
-module wfkit-link
+module conn
 
 go 1.25.0
 

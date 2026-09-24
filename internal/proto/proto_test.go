@@ -98,7 +98,7 @@ func TestSequentialFramesOnOneStream(t *testing.T) {
 		typ     MsgType
 		payload []byte
 	}{
-		{MsgHello, []byte("wfkit")},
+		{MsgHello, []byte("conn")},
 		{MsgPing, nil},
 		{MsgKey, []byte{0x2a, 0x01}},
 	}

@@ -9,10 +9,10 @@ import (
 	"os"
 	"time"
 
-	"wfkit-link/internal/config"
-	"wfkit-link/internal/inputdev"
-	"wfkit-link/internal/pointer"
-	"wfkit-link/internal/transport"
+	"conn/internal/config"
+	"conn/internal/inputdev"
+	"conn/internal/pointer"
+	"conn/internal/transport"
 )
 
 // loadConfig reads the settings file. This is the machine that receives input,
@@ -50,7 +50,7 @@ func checkDaemon(cfg *config.Config) []check {
 		return []check{{
 			name:   "daemon",
 			detail: "running, but this session has no permission to open " + socket,
-			fix: "you are in the wfkit-link group but this login session predates it; " +
+			fix: "you are in the conn group but this login session predates it; " +
 				"log out and back in, or run: exec su - $USER",
 		}}
 
@@ -58,7 +58,7 @@ func checkDaemon(cfg *config.Config) []check {
 		return []check{{
 			name:   "daemon",
 			detail: "not running — " + socket + " does not exist",
-			fix:    "sudo systemctl start wfkit-linkd",
+			fix:    "sudo systemctl start connd",
 		}}
 
 	default:
@@ -67,7 +67,7 @@ func checkDaemon(cfg *config.Config) []check {
 		return []check{{
 			name:   "daemon",
 			detail: err.Error(),
-			fix:    "check it with: sudo systemctl status wfkit-linkd",
+			fix:    "check it with: sudo systemctl status connd",
 		}}
 	}
 }
@@ -89,7 +89,7 @@ func checkLink(cfg *config.Config, self string, _ *transport.Peer) []check {
 		return []check{{
 			name:   "listening",
 			detail: "nothing is accepting connections on " + addr,
-			fix:    "systemctl --user start wfkit-link",
+			fix:    "systemctl --user start conn",
 		}}
 	}
 	closeQuietly(conn)
@@ -127,8 +127,8 @@ func checkPointer() []check {
 			detail: "the virtual pointer is on the adaptive acceleration profile",
 			fix: "the cursor will land in the wrong place after crossing; set a flat profile with:\n" +
 				"    kwriteconfig6 --file kcminputrc --group Libinput --group 7531 --group 1 " +
-				"--group wfkit-link --key PointerAccelerationProfile 1\n" +
-				"    then restart the daemon: sudo systemctl restart wfkit-linkd",
+				"--group conn --key PointerAccelerationProfile 1\n" +
+				"    then restart the daemon: sudo systemctl restart connd",
 		}}
 	}
 	return []check{{name: "pointer", ok: true, detail: "flat profile; injected motion is 1:1"}}

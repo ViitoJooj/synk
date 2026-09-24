@@ -17,7 +17,7 @@ import (
 
 	"golang.org/x/sys/unix"
 
-	"wfkit-link/internal/proto"
+	"conn/internal/proto"
 )
 
 // ioctl request numbers, taken from this machine's <linux/uinput.h> and

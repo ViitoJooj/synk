@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"wfkit-link/internal/proto"
+	"conn/internal/proto"
 )
 
 // fakeInjector records what the daemon was asked to inject.

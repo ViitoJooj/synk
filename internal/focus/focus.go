@@ -9,7 +9,7 @@ package focus
 import (
 	"fmt"
 
-	"wfkit-link/internal/proto"
+	"conn/internal/proto"
 )
 
 type Location uint8

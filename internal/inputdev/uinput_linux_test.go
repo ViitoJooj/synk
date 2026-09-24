@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"wfkit-link/internal/proto"
+	"conn/internal/proto"
 )
 
 // These values were read out of this machine's own <linux/uinput.h> and
@@ -61,13 +61,13 @@ func TestEncodeEventCarriesNegativeValues(t *testing.T) {
 
 // struct uinput_setup: input_id(8) + name[80] + ff_effects_max(4) = 92.
 func TestEncodeSetupMatchesKernelLayout(t *testing.T) {
-	got := encodeSetup("wfkit-link test")
+	got := encodeSetup("conn test")
 
 	if len(got) != 92 {
 		t.Fatalf("len = %d, want 92 (sizeof struct uinput_setup)", len(got))
 	}
 	name := got[8:88]
-	if !bytes.HasPrefix(name, []byte("wfkit-link test\x00")) {
+	if !bytes.HasPrefix(name, []byte("conn test\x00")) {
 		t.Errorf("name field = %q, want the name NUL-terminated at offset 8", name)
 	}
 }
@@ -128,7 +128,7 @@ func requireRoot(t *testing.T) {
 func TestIntegrationVirtualDeviceAcceptsEvents(t *testing.T) {
 	requireRoot(t)
 
-	v, err := OpenVirtual("wfkit-link-test")
+	v, err := OpenVirtual("conn-test")
 	if err != nil {
 		t.Fatalf("OpenVirtual: %v", err)
 	}

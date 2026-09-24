@@ -6,13 +6,13 @@ import (
 	"strings"
 	"testing"
 
-	"wfkit-link/internal/proto"
+	"conn/internal/proto"
 )
 
 func writeConfig(t *testing.T, body string) string {
 	t.Helper()
 	dir := t.TempDir()
-	path := filepath.Join(dir, "link.yaml")
+	path := filepath.Join(dir, "conn.yaml")
 	if err := os.WriteFile(path, []byte(body), 0o600); err != nil {
 		t.Fatalf("writing config: %v", err)
 	}

@@ -9,8 +9,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"wfkit-link/internal/audio"
-	"wfkit-link/internal/transport"
+	"conn/internal/audio"
+	"conn/internal/transport"
 )
 
 const (

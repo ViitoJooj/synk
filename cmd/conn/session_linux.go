@@ -16,13 +16,13 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"wfkit-link/internal/clipboard"
-	"wfkit-link/internal/config"
-	"wfkit-link/internal/focus"
-	"wfkit-link/internal/ipc"
-	"wfkit-link/internal/proto"
-	"wfkit-link/internal/screen"
-	"wfkit-link/internal/transport"
+	"conn/internal/clipboard"
+	"conn/internal/config"
+	"conn/internal/focus"
+	"conn/internal/ipc"
+	"conn/internal/proto"
+	"conn/internal/screen"
+	"conn/internal/transport"
 )
 
 const (
@@ -37,7 +37,7 @@ const (
 var sessionCmd = &cobra.Command{
 	Use:   "session",
 	Short: "Accept the peer's connection and apply its input locally",
-	Long: `Run the unprivileged half of wfkit-link.
+	Long: `Run the unprivileged half of conn.
 
 This process owns the network connection, the clipboard and the screen
 geometry. It holds no privilege of its own: to type, it asks the daemon over a
@@ -107,7 +107,7 @@ func runSession(cmd *cobra.Command, _ []string) error {
 		l.Close()
 	}()
 
-	fmt.Fprintf(out, "wfkit-link listening on %s:%d for %s, peer screen on the %s\n",
+	fmt.Fprintf(out, "conn listening on %s:%d for %s, peer screen on the %s\n",
 		self, cfg.Port, cfg.Peer, cfg.EdgeName)
 
 	for ctx.Err() == nil {
@@ -393,7 +393,7 @@ func (s *session) trackCursor(dx, dy int) error {
 // The distance is exact only because the virtual device is on a flat
 // acceleration profile. Under libinput's default adaptive curve a single large
 // delta is scaled by nearly twice — measured here, an intended 500 pixels
-// travelled 934 — and the pointer lands somewhere else entirely. `wfkit-link
+// travelled 934 — and the pointer lands somewhere else entirely. `conn
 // status` reports the profile for that reason.
 func (s *session) enterCursor(ratio uint16) error {
 	dx, dy := focus.EnterOffset(s.fsm.RemoteEdge(), ratio, s.w, s.h)

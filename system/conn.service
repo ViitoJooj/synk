@@ -12,7 +12,7 @@ PartOf=graphical-session.target
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/wfkit-link session
+ExecStart=/usr/local/bin/conn session
 
 # The peer being asleep is the normal case, not a fault: the session exits,
 # systemd restarts it, and it goes back to waiting.

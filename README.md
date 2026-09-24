@@ -1,4 +1,4 @@
-# wfkit-link
+# conn
 
 Compartilha mouse, teclado, área de transferência e áudio entre uma máquina
 Linux e um PC Windows na mesma tailnet. O ponteiro atravessa a borda da tela e
@@ -7,21 +7,23 @@ o teclado vai junto; não há agente na nuvem e não há servidor no meio.
 Extraído de [wfkit](https://github.com/ViitoJooj/wfkit) em 2026-09-05, onde
 vivia como subcomando do CLI. Virou projeto próprio porque é um app de duas
 máquinas com ciclo de vida próprio, não parte do provisionamento de um desktop.
+Chamou-se `wfkit-link` até 2026-09-24; `system/install.sh` e
+`system/windows/install.ps1` migram uma instalação com o nome antigo.
 
 ## Como está montado
 
 ```
-cmd/link/        o binário: subcomandos session, daemon, status
+cmd/conn/        o binário: subcomandos session, daemon, status
 internal/        transporte, protocolo, entrada, áudio, clipboard, foco
 system/          units de systemd e install.sh
 ```
 
 Dois processos no Linux, de propósito:
 
-- **`wfkit-link daemon`** (root, unit de sistema) abre `/dev/uinput` e não faz
+- **`conn daemon`** (root, unit de sistema) abre `/dev/uinput` e não faz
   mais nada. Sem rede — `PrivateNetwork=yes` —, sem áudio, sem clipboard. Ele
   injeta entrada e nunca lê. O único canal é um socket unix.
-- **`wfkit-link session`** (seu usuário, unit de sessão) tem a conexão com o
+- **`conn session`** (seu usuário, unit de sessão) tem a conexão com o
   peer, o clipboard e o áudio. Para digitar, pede ao daemon pelo socket. Não
   detém privilégio nenhum.
 
@@ -69,7 +71,7 @@ perfil flat do dispositivo virtual e habilita as duas units.
 
 ## Instalar no Windows
 
-Copie o `wfkit-link.exe` para o PC — é o único arquivo que precisa ir. Depois,
+Copie o `conn.exe` para o PC — é o único arquivo que precisa ir. Depois,
 num PowerShell:
 
 ```powershell

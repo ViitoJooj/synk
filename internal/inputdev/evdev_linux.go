@@ -26,7 +26,7 @@ const (
 // VirtualNamePrefix marks the devices this tool creates. ListDevices skips
 // them: reading back our own injected events would feed them straight into the
 // sender and loop forever.
-const VirtualNamePrefix = "wfkit-link"
+const VirtualNamePrefix = "conn"
 
 // eviocGName builds EVIOCGNAME(len) — _IOR('E', 0x06, char[len]).
 func eviocGName(length int) uintptr {

@@ -12,9 +12,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"wfkit-link/internal/config"
-	"wfkit-link/internal/inputdev"
-	"wfkit-link/internal/ipc"
+	"conn/internal/config"
+	"conn/internal/inputdev"
+	"conn/internal/ipc"
 )
 
 var daemonSocket string
@@ -22,7 +22,7 @@ var daemonSocket string
 var daemonCmd = &cobra.Command{
 	Use:   "daemon",
 	Short: "Run the privileged injector (systemd runs this; you should not need to)",
-	Long: `Run the part of wfkit-link that needs root.
+	Long: `Run the part of conn that needs root.
 
 This process opens /dev/uinput and does nothing else. It has no network access
 at all — the systemd unit gives it PrivateNetwork=yes — and it never reads your
@@ -67,6 +67,6 @@ func runDaemon(cmd *cobra.Command, _ []string) error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	fmt.Fprintf(cmd.OutOrStdout(), "wfkit-link daemon ready on %s\n", daemonSocket)
+	fmt.Fprintf(cmd.OutOrStdout(), "conn daemon ready on %s\n", daemonSocket)
 	return srv.Serve(ctx)
 }

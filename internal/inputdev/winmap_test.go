@@ -3,7 +3,7 @@ package inputdev
 import (
 	"testing"
 
-	"wfkit-link/internal/proto"
+	"conn/internal/proto"
 )
 
 // These map Win32 mouse messages to the neutral wire representation. The code
