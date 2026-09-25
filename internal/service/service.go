@@ -7,6 +7,7 @@
 package service
 
 import (
+	"errors"
 	"os"
 	"os/exec"
 	"strings"
@@ -18,6 +19,10 @@ const (
 	InjectorUnit = "synk-injector.service"
 	TaskName     = "synk"
 )
+
+// ErrNotInstalled means there is no unit or task to start: the installer has
+// not run on this machine.
+var ErrNotInstalled = errors.New("service: synk is not installed on this machine")
 
 // State is one background process as the service manager sees it.
 type State struct {

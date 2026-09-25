@@ -32,5 +32,8 @@ func saveChoice(name string) error {
 	return nil
 }
 
+// installHint is how to install synk here.
+const installHint = "run hacks/install.sh from the synk repository"
+
 // keepsConfig: this machine receives input, so it is the one with settings.
 const keepsConfig = true

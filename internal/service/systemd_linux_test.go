@@ -98,11 +98,22 @@ func TestStartRefusesWithoutAnInjector(t *testing.T) {
 	f := &fakeSystemd{units: map[string]string{AgentUnit: stopped}}
 
 	err := NewWithRunner(f).Start()
-	if err == nil || !strings.Contains(err.Error(), "hacks/install.sh") {
-		t.Fatalf("err = %v, want it to say how to install", err)
+	if !errors.Is(err, ErrNotInstalled) || !strings.Contains(err.Error(), InjectorUnit) {
+		t.Fatalf("err = %v, want ErrNotInstalled naming the missing unit", err)
 	}
 	if len(f.ran) != 0 {
 		t.Errorf("ran %q with nothing installed", f.ran)
+	}
+}
+
+func TestRestartRefusesWithoutAnAgent(t *testing.T) {
+	f := &fakeSystemd{units: map[string]string{InjectorUnit: running}}
+
+	if err := NewWithRunner(f).Restart(); !errors.Is(err, ErrNotInstalled) {
+		t.Fatalf("err = %v, want ErrNotInstalled", err)
+	}
+	if len(f.ran) != 0 {
+		t.Errorf("ran %q with the agent missing", f.ran)
 	}
 }
 
@@ -119,7 +130,7 @@ func TestStopTouchesOnlyTheAgent(t *testing.T) {
 
 func TestRestartReportsFailure(t *testing.T) {
 	boom := errors.New("exit status 1")
-	f := &fakeSystemd{units: map[string]string{InjectorUnit: running}, fail: boom}
+	f := &fakeSystemd{units: map[string]string{AgentUnit: running, InjectorUnit: running}, fail: boom}
 
 	if err := NewWithRunner(f).Restart(); !errors.Is(err, boom) {
 		t.Errorf("err = %v, want the systemctl failure", err)

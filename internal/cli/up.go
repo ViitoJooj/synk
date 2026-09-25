@@ -1,11 +1,21 @@
 package cli
 
 import (
+	"errors"
+
 	"github.com/spf13/cobra"
 
 	"github.com/ViitoJooj/synk/internal/service"
 	"github.com/ViitoJooj/synk/pkg/errorx"
 )
+
+// serviceError explains a failed start, stop or restart.
+func serviceError(action string, err error) error {
+	if errors.Is(err, service.ErrNotInstalled) {
+		return errorx.NotInstalled(installHint, err)
+	}
+	return errorx.Service(action, err)
+}
 
 var upCmd = &cobra.Command{
 	Use:   "up",
@@ -13,7 +23,7 @@ var upCmd = &cobra.Command{
 	Args:  cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, _ []string) error {
 		if err := service.New().Start(); err != nil {
-			return errorx.Service("start", err)
+			return serviceError("start", err)
 		}
 		say(cmd.OutOrStdout(), "agent started")
 		return nil
@@ -30,7 +40,7 @@ commands from, and leaving it up means 'synk up' needs no password.`,
 	Args: cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, _ []string) error {
 		if err := service.New().Stop(); err != nil {
-			return errorx.Service("stop", err)
+			return serviceError("stop", err)
 		}
 		say(cmd.OutOrStdout(), "agent stopped")
 		return nil
@@ -43,7 +53,7 @@ var restartCmd = &cobra.Command{
 	Args:  cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, _ []string) error {
 		if err := service.New().Restart(); err != nil {
-			return errorx.Service("restart", err)
+			return serviceError("restart", err)
 		}
 		say(cmd.OutOrStdout(), "agent restarted")
 		return nil

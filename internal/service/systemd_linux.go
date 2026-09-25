@@ -51,6 +51,9 @@ func (m *Manager) unit(name, unit string, user bool) (State, error) {
 // a system unit, so starting it may ask for your password; the agent is yours
 // and never does.
 func (m *Manager) Start() error {
+	if err := m.ensureInstalled(); err != nil {
+		return err
+	}
 	if err := m.ensureInjector(); err != nil {
 		return err
 	}
@@ -65,19 +68,34 @@ func (m *Manager) Stop() error {
 
 // Restart restarts the agent, starting it if it was stopped.
 func (m *Manager) Restart() error {
+	if err := m.ensureInstalled(); err != nil {
+		return err
+	}
 	if err := m.ensureInjector(); err != nil {
 		return err
 	}
 	return m.run.Interactive("systemctl", "--user", "restart", AgentUnit)
 }
 
+// ensureInstalled checks both units before touching either, so a half
+// install fails with one clear error rather than half a start.
+func (m *Manager) ensureInstalled() error {
+	states, err := m.States()
+	if err != nil {
+		return err
+	}
+	for _, s := range states {
+		if !s.Installed {
+			return fmt.Errorf("%w: %s is missing", ErrNotInstalled, s.Unit)
+		}
+	}
+	return nil
+}
+
 func (m *Manager) ensureInjector() error {
 	s, err := m.unit("injector", InjectorUnit, false)
 	if err != nil {
 		return err
-	}
-	if !s.Installed {
-		return fmt.Errorf("%s is not installed; run hacks/install.sh", InjectorUnit)
 	}
 	if s.Running() {
 		return nil

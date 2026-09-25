@@ -39,14 +39,25 @@ func (m *Manager) Restart() error {
 }
 
 func (m *Manager) task(cmdlet string) error {
+	states, err := m.States()
+	if err != nil {
+		return err
+	}
+	if !states[0].Installed {
+		return fmt.Errorf("%w: there is no scheduled task called %s", ErrNotInstalled, TaskName)
+	}
 	if out, err := m.powershell(fmt.Sprintf("%s -TaskName '%s' -ErrorAction Stop", cmdlet, TaskName)); err != nil {
 		return fmt.Errorf("%s: %w: %s", cmdlet, err, out)
 	}
 	return nil
 }
 
+// powershell runs a script and returns what it printed. Output is switched to
+// UTF-8 first: by default it comes in the console's OEM code page, and a
+// Portuguese error message arrives as "n\ufffdo" instead of "não".
 func (m *Manager) powershell(script string) (string, error) {
-	return m.run.Output("powershell.exe", "-NoProfile", "-NonInteractive", "-Command", script)
+	return m.run.Output("powershell.exe", "-NoProfile", "-NonInteractive", "-Command",
+		"[Console]::OutputEncoding = [Text.Encoding]::UTF8; "+script)
 }
 
 // logRedirect finds the file install.ps1 -Hidden sends output to.

@@ -138,6 +138,17 @@ func Failed(action string, err error) *Error {
 	return &Error{Code: "snk-07", Msg: "could not " + action, Kind: Internal, Err: err}
 }
 
+// NotInstalled takes the installer to run, which differs by platform.
+func NotInstalled(install string, err error) *Error {
+	return &Error{
+		Code: "snk-10",
+		Msg:  "the agent is not installed on this machine",
+		Kind: User,
+		Hint: install,
+		Err:  err,
+	}
+}
+
 func NoConfigHere() *Error {
 	return &Error{
 		Code: "snk-08",

@@ -31,7 +31,12 @@ func runConnect(cmd *cobra.Command, name string) error {
 		return err
 	}
 	if err := service.New().Restart(); err != nil {
-		return errorx.Service("restart", err)
+		// The choice is saved either way, and the agent will use it once it
+		// is installed; saying so saves running this again.
+		if errors.Is(err, service.ErrNotInstalled) {
+			say(out, "saved %s as the peer; the agent will link with it once it is installed", peer.Host)
+		}
+		return serviceError("restart", err)
 	}
 
 	say(out, "synk now links with %s (%s, %s)", peer.Host, peer.OS, peer.IP)

@@ -7,9 +7,12 @@
 // somewhere other than where it crossed, and the model the session keeps of
 // where the pointer is drifts from the pointer itself.
 //
-// The fix is a flat profile for this one device, written to kcminputrc by the
-// installer. This package exists so that when it is missing, the report says so
-// instead of leaving a cursor that lands in the wrong place unexplained.
+// The fix is a flat profile for this one device. The installer writes it to
+// kcminputrc, but that alone is not enough: KWin reads the file when the
+// session starts and does not look again when a new device appears, and the
+// injector creates a new device every time it starts. Measured after the
+// rename to synk: the entry was in the file and the device was still adaptive.
+// So the agent also sets it live, over KWin's DBus, with MakeFlat.
 package pointer
 
 import (
@@ -58,6 +61,19 @@ func (r *Reader) Flat(deviceName string) (bool, error) {
 	return strings.Contains(out, "true"), nil
 }
 
+// MakeFlat puts the named device on a flat profile with no acceleration,
+// effective immediately. KWin also writes it back to kcminputrc itself.
+func (r *Reader) MakeFlat(deviceName string) error {
+	path, err := r.find(deviceName)
+	if err != nil {
+		return err
+	}
+	if err := r.set(path, "pointerAccelerationProfileFlat", "<true>"); err != nil {
+		return err
+	}
+	return r.set(path, "pointerAcceleration", "<0.0>")
+}
+
 // find locates the DBus object for a device by name. KWin exposes no lookup by
 // name, so the objects are read in turn until one matches.
 func (r *Reader) find(deviceName string) (string, error) {
@@ -84,4 +100,16 @@ func (r *Reader) property(path, name string) (string, error) {
 		return "", err
 	}
 	return string(out), nil
+}
+
+func (r *Reader) set(path, name, value string) error {
+	out, err := r.runner.Run("gdbus", "call", "--session",
+		"--dest", "org.kde.KWin",
+		"--object-path", path,
+		"--method", "org.freedesktop.DBus.Properties.Set",
+		"org.kde.KWin.InputDevice", name, value)
+	if err != nil {
+		return fmt.Errorf("pointer: setting %s: %w: %s", name, err, strings.TrimSpace(string(out)))
+	}
+	return nil
 }

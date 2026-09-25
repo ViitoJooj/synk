@@ -47,5 +47,8 @@ func choicePath() (string, error) {
 	return filepath.Join(dir, "peer"), nil
 }
 
+// installHint is how to install synk here.
+const installHint = `run .\install.ps1 -Hidden in PowerShell, from the folder with synk.exe`
+
 // keepsConfig: this machine reads no config; see chosenPeer.
 const keepsConfig = false

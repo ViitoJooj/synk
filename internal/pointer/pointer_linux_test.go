@@ -24,6 +24,13 @@ func (f *fakeRunner) Run(_ string, args ...string) ([]byte, error) {
 	prop = args[len(args)-1]
 	f.calls++
 
+	if args[len(args)-4] == "org.freedesktop.DBus.Properties.Set" {
+		prop = args[len(args)-2]
+		key := path[strings.LastIndex(path, "/")+1:] + "/" + prop
+		f.props[key] = "(" + args[len(args)-1] + ",)\n"
+		return []byte("()\n"), nil
+	}
+
 	key := path[strings.LastIndex(path, "/")+1:] + "/" + prop
 	out, ok := f.props[key]
 	if !ok {
@@ -97,5 +104,30 @@ func TestFlatDoesNotMatchOnASubstring(t *testing.T) {
 
 	if _, err := NewWithRunner(r).Flat("conn"); !errors.Is(err, ErrDeviceNotFound) {
 		t.Fatalf("err = %v, want ErrDeviceNotFound", err)
+	}
+}
+
+// The case that happened after the rename: the right entry was in kcminputrc
+// and the device was still adaptive, because KWin had not read it again.
+func TestMakeFlatFlattensAnAdaptiveDevice(t *testing.T) {
+	f := devices(false)
+	r := NewWithRunner(f)
+
+	if err := r.MakeFlat("conn"); err != nil {
+		t.Fatalf("MakeFlat: %v", err)
+	}
+	flat, err := r.Flat("conn")
+	if err != nil || !flat {
+		t.Fatalf("Flat after MakeFlat = %v, %v", flat, err)
+	}
+	if got := f.props["event12/pointerAcceleration"]; got != "(<0.0>,)\n" {
+		t.Errorf("acceleration = %q, want 0", got)
+	}
+}
+
+func TestMakeFlatSaysWhenTheDeviceIsAbsent(t *testing.T) {
+	err := NewWithRunner(devices(false)).MakeFlat("synk")
+	if !errors.Is(err, ErrDeviceNotFound) {
+		t.Errorf("err = %v, want ErrDeviceNotFound", err)
 	}
 }

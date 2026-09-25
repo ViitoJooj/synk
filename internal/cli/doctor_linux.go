@@ -125,10 +125,9 @@ func checkPointer() []check {
 		return []check{{
 			name:   "pointer",
 			detail: "the virtual pointer is on the adaptive acceleration profile",
-			fix: "the cursor will land in the wrong place after crossing; set a flat profile with:\n" +
-				"    kwriteconfig6 --file kcminputrc --group Libinput --group 7531 --group 1 " +
-				"--group synk --key PointerAccelerationProfile 1\n" +
-				"    then restart the injector: sudo systemctl restart synk-injector",
+			fix: "the cursor will land in the wrong place after crossing. The agent sets a flat profile " +
+				"each time the peer connects, so this clears on the next connection; if it stays, " +
+				"'synk logs' says why the agent could not set it",
 		}}
 	}
 	return []check{{name: "pointer", ok: true, detail: "flat profile; injected motion is 1:1"}}

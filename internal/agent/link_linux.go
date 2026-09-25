@@ -14,7 +14,9 @@ import (
 	"github.com/ViitoJooj/synk/internal/clipboard"
 	"github.com/ViitoJooj/synk/internal/config"
 	"github.com/ViitoJooj/synk/internal/focus"
+	"github.com/ViitoJooj/synk/internal/inputdev"
 	"github.com/ViitoJooj/synk/internal/ipc"
+	"github.com/ViitoJooj/synk/internal/pointer"
 	"github.com/ViitoJooj/synk/internal/proto"
 	"github.com/ViitoJooj/synk/internal/screen"
 	"github.com/ViitoJooj/synk/internal/transport"
@@ -153,6 +155,14 @@ func servePeer(ctx context.Context, out io.Writer, conn net.Conn, ts *transport.
 		return
 	}
 	defer daemon.Close()
+
+	// Before the first move, not once at startup: the injector makes a new
+	// device whenever it restarts, and KWin does not apply kcminputrc to it.
+	// Failing here is not fatal — the link still works, with a cursor that
+	// lands off target, and `synk doctor` reports why.
+	if err := pointer.New().MakeFlat(inputdev.VirtualNamePrefix); err != nil {
+		fmt.Fprintf(out, "could not set a flat pointer profile: %v\n", err)
+	}
 
 	fmt.Fprintf(out, "%s (%s) connected; desktop %s, peer screen on the %s\n",
 		peer.Host, peer.IP, geom.Describe(), cfg.EdgeName)
