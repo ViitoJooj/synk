@@ -1,6 +1,6 @@
 //go:build windows
 
-package main
+package agent
 
 import (
 	"context"
@@ -8,8 +8,8 @@ import (
 	"runtime"
 	"time"
 
-	"conn/internal/audio"
-	"conn/internal/transport"
+	"github.com/ViitoJooj/synk/internal/audio"
+	"github.com/ViitoJooj/synk/internal/transport"
 )
 
 const (

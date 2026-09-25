@@ -1,19 +1,20 @@
-// Command conn shares one keyboard, mouse, clipboard and sound system
-// between this machine and a peer on the same tailnet.
+// Package cli is synk's command line: it parses flags, finds the config and
+// hands the work to the agent and the injector.
 //
-// It began as a subcommand of the wfkit CLI and left to be its own project:
-// it is a two-machine app with its own life cycle, and it has to cross-compile
-// to Windows, which the wfkit CLI cannot.
-package main
+// synk began as a subcommand of the wfkit CLI, as wfkit-link and then conn, and
+// left to be its own project: it is a two-machine app with its own life cycle,
+// and it has to cross-compile to Windows, which the wfkit CLI cannot.
+package cli
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"syscall"
 
 	"github.com/spf13/cobra"
-
-	"conn/internal/config"
 )
 
 const configName = "conn.yaml"
@@ -27,7 +28,7 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "conn",
+	Use:   "synk",
 	Short: "Share keyboard, mouse, clipboard and audio with a machine on your tailnet",
 
 	SilenceUsage:  true,
@@ -41,15 +42,21 @@ func init() {
 		"port to use instead of the configured one")
 }
 
-func main() {
+// Execute runs the command line and exits non-zero on failure.
+func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintln(os.Stderr, "conn:", err)
+		fmt.Fprintln(os.Stderr, "synk:", err)
 		os.Exit(1)
 	}
 }
 
+// signalContext is cancelled by Ctrl+C or by systemd stopping the unit.
+func signalContext() (context.Context, context.CancelFunc) {
+	return signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+}
+
 // configDir is ~/.config/conn: per-user preferences, never system state.
-// Until the rename it was ~/.config/wfkit/link.yaml; system/install.sh moves
+// Until the rename it was ~/.config/wfkit/link.yaml; infra/install.sh moves
 // an existing one over.
 func configDir() (string, error) {
 	base, err := os.UserConfigDir()
@@ -65,27 +72,4 @@ func configPath() (string, error) {
 		return "", err
 	}
 	return filepath.Join(dir, configName), nil
-}
-
-// portFor picks the port: the flag wins, then the config, then the default.
-func portFor(cfg *config.Config) int {
-	switch {
-	case linkPort != 0:
-		return linkPort
-	case cfg != nil && cfg.Port != 0:
-		return cfg.Port
-	default:
-		return config.DefaultPort
-	}
-}
-
-// clipboardEnabled defaults to on when there is no configuration to consult.
-// The machine without a config file is the one the user never has to set up,
-// and a clipboard that silently does nothing there would be a puzzle; the
-// receiving side's config still decides whether anything is sent to it.
-func clipboardEnabled(cfg *config.Config) bool {
-	if cfg == nil {
-		return true
-	}
-	return cfg.Clipboard
 }

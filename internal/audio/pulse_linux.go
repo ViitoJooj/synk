@@ -11,7 +11,7 @@ import (
 )
 
 // appName is what shows up in pavucontrol and KDE's volume applet.
-const appName = "conn"
+const appName = "synk"
 
 // Monitor captures whatever the default sink is playing — the source of the
 // Linux to Windows playback stream.

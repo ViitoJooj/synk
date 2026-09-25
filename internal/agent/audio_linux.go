@@ -1,6 +1,6 @@
 //go:build linux
 
-package main
+package agent
 
 import (
 	"context"
@@ -9,8 +9,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"conn/internal/audio"
-	"conn/internal/transport"
+	"github.com/ViitoJooj/synk/internal/audio"
+	"github.com/ViitoJooj/synk/internal/transport"
 )
 
 const (

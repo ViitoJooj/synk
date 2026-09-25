@@ -1,6 +1,6 @@
 //go:build linux
 
-package main
+package cli
 
 import (
 	"errors"
@@ -9,10 +9,10 @@ import (
 	"os"
 	"time"
 
-	"conn/internal/config"
-	"conn/internal/inputdev"
-	"conn/internal/pointer"
-	"conn/internal/transport"
+	"github.com/ViitoJooj/synk/internal/config"
+	"github.com/ViitoJooj/synk/internal/inputdev"
+	"github.com/ViitoJooj/synk/internal/pointer"
+	"github.com/ViitoJooj/synk/internal/transport"
 )
 
 // loadConfig reads the settings file. This is the machine that receives input,

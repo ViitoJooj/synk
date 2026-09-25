@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"conn/internal/proto"
+	"github.com/ViitoJooj/synk/internal/proto"
 )
 
 // ---- peer authorisation ----

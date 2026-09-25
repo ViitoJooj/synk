@@ -3,7 +3,7 @@ package inputdev
 import (
 	"testing"
 
-	"conn/internal/proto"
+	"github.com/ViitoJooj/synk/internal/proto"
 )
 
 // These map Win32 mouse messages to the neutral wire representation. The code

@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
-# Install conn on this Linux machine.
+# Install synk on this Linux machine.
 #
 # Run as your normal user; it asks for sudo only for the steps that genuinely
 # need root, and prints each one before running it.
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-UNITS="$REPO/system"
-BIN="$REPO/conn"
+UNITS="$REPO/infra"
+BIN="$REPO/synk"
 GROUP="conn"
 
 say() { printf '\n\033[1m==> %s\033[0m\n' "$*"; }
 
 say "Building"
-(cd "$REPO" && GOTOOLCHAIN=auto go build -o conn ./cmd/conn)
+(cd "$REPO" && GOTOOLCHAIN=auto go build -o synk ./cmd/synk)
 test -x "$BIN"
 
 # --- migração do nome antigo (wfkit-link, até 2026-09-24) ------------------
@@ -37,7 +37,7 @@ if [ -f ~/.config/wfkit/link.yaml ] && [ ! -e ~/.config/conn/conn.yaml ]; then
 fi
 
 say "Installing the binary to /usr/local/bin"
-sudo install -m 0755 "$BIN" /usr/local/bin/conn
+sudo install -m 0755 "$BIN" /usr/local/bin/synk
 
 say "Creating the $GROUP group and adding $USER to it"
 # The group gates the daemon's socket. Being in it means being able to ask for
@@ -74,7 +74,7 @@ systemctl --user enable --now conn.service
 
 say "Checking"
 sudo systemctl --no-pager --lines=0 status connd.service || true
-/usr/local/bin/conn status || true
+/usr/local/bin/synk status || true
 
 cat <<'EOF'
 
@@ -98,6 +98,6 @@ Two things worth knowing:
 
   * Verify the daemon really has no network, which is the point of the unit's
     hardening:
-        sudo nsenter -t "$(pidof conn | cut -d' ' -f1)" -n ip addr
+        sudo nsenter -t "$(pidof synk | cut -d' ' -f1)" -n ip addr
     It should show only a loopback interface.
 EOF

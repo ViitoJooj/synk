@@ -1,13 +1,14 @@
 //go:build windows
 
-package main
+package cli
 
 import (
 	"errors"
 	"fmt"
 
-	"conn/internal/config"
-	"conn/internal/transport"
+	"github.com/ViitoJooj/synk/internal/agent"
+	"github.com/ViitoJooj/synk/internal/config"
+	"github.com/ViitoJooj/synk/internal/transport"
 )
 
 // loadConfig deliberately reads nothing on this machine.
@@ -38,7 +39,7 @@ func checkLink(cfg *config.Config, _ string, peer *transport.Peer) []check {
 		return nil
 	}
 
-	port := portFor(cfg)
+	port := agent.Port(linkPort, cfg)
 
 	conn, err := transport.Dial(peer.IP, port)
 	if err != nil {
@@ -62,9 +63,9 @@ func dialAdvice(err error) string {
 	var timeout interface{ Timeout() bool }
 	if errors.As(err, &timeout) && timeout.Timeout() {
 		return "the peer is reachable but did not answer in time; " +
-			"check that `conn session` is running there, and that nothing is filtering the port"
+			"check that `synk session` is running there, and that nothing is filtering the port"
 	}
-	return "start `conn session` on the other machine (`systemctl --user start conn` on Linux)"
+	return "start `synk session` on the other machine (`systemctl --user start conn` on Linux)"
 }
 
 // checkPointer has no counterpart here: this machine's pointer is its own, and

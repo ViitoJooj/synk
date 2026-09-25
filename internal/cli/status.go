@@ -1,4 +1,4 @@
-package main
+package cli
 
 import (
 	"errors"
@@ -9,8 +9,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"conn/internal/config"
-	"conn/internal/transport"
+	"github.com/ViitoJooj/synk/internal/agent"
+	"github.com/ViitoJooj/synk/internal/config"
+	"github.com/ViitoJooj/synk/internal/transport"
 )
 
 var statusCmd = &cobra.Command{
@@ -18,7 +19,7 @@ var statusCmd = &cobra.Command{
 	Short: "Show whether the link is ready, and what is missing if not",
 	Long: `Check every part the link depends on and report what is wrong.
 
-Run this before ` + "`conn session`" + ` whenever something is not working. It
+Run this before ` + "`synk session`" + ` whenever something is not working. It
 answers the questions in the order they matter: is the configuration readable,
 is Tailscale up, is the peer online, is the privileged daemon running, and can
 the two machines actually reach each other.`,
@@ -155,17 +156,9 @@ func checkTailscale(ts *transport.Tailscale, cfg *config.Config) (string, *trans
 	})
 }
 
-// resolvePeer names the other machine: the flag first, then the config, and
-// otherwise by finding the single other computer online.
+// resolvePeer names the other machine the way the session will.
 func resolvePeer(ts *transport.Tailscale, cfg *config.Config) (transport.Peer, error) {
-	switch {
-	case linkPeer != "":
-		return ts.Peer(linkPeer)
-	case cfg != nil && cfg.Peer != "":
-		return ts.Peer(cfg.Peer)
-	default:
-		return ts.SolePeer()
-	}
+	return agent.ResolvePeer(ts, linkPeer, cfg)
 }
 
 func closeQuietly(c io.Closer) { _ = c.Close() }

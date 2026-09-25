@@ -1,14 +1,14 @@
 //go:build linux
 
-package main
+package agent
 
 import (
 	"context"
 	"fmt"
 	"time"
 
-	"conn/internal/clipboard"
-	"conn/internal/proto"
+	"github.com/ViitoJooj/synk/internal/clipboard"
+	"github.com/ViitoJooj/synk/internal/proto"
 )
 
 // watchClipboard polls the local clipboard and sends anything genuinely new.

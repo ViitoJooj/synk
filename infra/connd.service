@@ -1,5 +1,5 @@
 [Unit]
-# The privileged half of conn. It opens /dev/uinput and does nothing
+# The privileged half of synk. It opens /dev/uinput and does nothing
 # else: no network, no audio, no clipboard, and — with the Windows PC owning
 # the keyboard — it never reads input either, only injects it.
 Description=WorkflowKit link injector
@@ -7,7 +7,7 @@ After=systemd-udev-settle.service
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/conn daemon
+ExecStart=/usr/local/bin/synk daemon
 Restart=on-failure
 RestartSec=2s
 
@@ -20,7 +20,7 @@ Group=conn
 # The load-bearing one. This process can type on your behalf, so it is given no
 # way to reach the network at all — not the tailnet, not the LAN, nothing. Its
 # only channel is the unix socket above. Verify with:
-#   sudo nsenter -t $(pidof conn) -n ip addr
+#   sudo nsenter -t $(pidof synk) -n ip addr
 PrivateNetwork=yes
 RestrictAddressFamilies=AF_UNIX
 

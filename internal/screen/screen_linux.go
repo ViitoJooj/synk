@@ -103,7 +103,7 @@ func (r *Reader) Read() (Geometry, error) {
 // `su -` looks perfectly normal, but has dropped XDG_RUNTIME_DIR, so Qt cannot
 // open the Wayland socket and kscreen-doctor aborts.
 func sessionEnvError(runtimeDir, waylandDisplay, x11Display string) error {
-	const fix = "run conn from your graphical session — log out and back " +
+	const fix = "run synk from your graphical session — log out and back " +
 		"in rather than using `su`, which drops these variables"
 
 	if runtimeDir == "" {

@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"conn/internal/proto"
+	"github.com/ViitoJooj/synk/internal/proto"
 )
 
 // fakeInjector records what the daemon was asked to inject.

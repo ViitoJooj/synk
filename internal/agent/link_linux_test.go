@@ -1,6 +1,6 @@
 //go:build linux
 
-package main
+package agent
 
 import (
 	"fmt"
@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"conn/internal/focus"
-	"conn/internal/proto"
+	"github.com/ViitoJooj/synk/internal/focus"
+	"github.com/ViitoJooj/synk/internal/proto"
 )
 
 // fakeInjector records what the session asked the daemon to do, so the whole

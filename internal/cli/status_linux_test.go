@@ -1,6 +1,6 @@
 //go:build linux
 
-package main
+package cli
 
 import (
 	"net"
@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"conn/internal/config"
+	"github.com/ViitoJooj/synk/internal/config"
 )
 
 func cfgWithSocket(path string) *config.Config {

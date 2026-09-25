@@ -1,4 +1,4 @@
-# conn
+# synk
 
 Compartilha mouse, teclado, área de transferência e áudio entre uma máquina
 Linux e um PC Windows na mesma tailnet. O ponteiro atravessa a borda da tela e
@@ -7,23 +7,27 @@ o teclado vai junto; não há agente na nuvem e não há servidor no meio.
 Extraído de [wfkit](https://github.com/ViitoJooj/wfkit) em 2026-09-05, onde
 vivia como subcomando do CLI. Virou projeto próprio porque é um app de duas
 máquinas com ciclo de vida próprio, não parte do provisionamento de um desktop.
-Chamou-se `wfkit-link` até 2026-09-24; `system/install.sh` e
-`system/windows/install.ps1` migram uma instalação com o nome antigo.
+Chamou-se `wfkit-link` até 2026-09-24 e `conn` até 2026-09-25;
+`infra/install.sh` e `infra/windows/install.ps1` migram uma instalação com o
+nome `wfkit-link`. As units, o grupo e a config ainda usam o nome `conn`.
 
 ## Como está montado
 
 ```
-cmd/conn/        o binário: subcomandos session, daemon, status
-internal/        transporte, protocolo, entrada, áudio, clipboard, foco
-system/          units de systemd e install.sh
+cmd/synk/          o binário: só chama internal/cli
+internal/cli/      os comandos: session, daemon, status
+internal/agent/    o processo que fica de pé: link, clipboard, áudio
+internal/injector/ o daemon root que abre /dev/uinput
+internal/          transporte, protocolo, entrada, áudio, clipboard, foco
+infra/             units de systemd, install.sh e install.ps1
 ```
 
 Dois processos no Linux, de propósito:
 
-- **`conn daemon`** (root, unit de sistema) abre `/dev/uinput` e não faz
+- **`synk daemon`** (root, unit de sistema) abre `/dev/uinput` e não faz
   mais nada. Sem rede — `PrivateNetwork=yes` —, sem áudio, sem clipboard. Ele
   injeta entrada e nunca lê. O único canal é um socket unix.
-- **`conn session`** (seu usuário, unit de sessão) tem a conexão com o
+- **`synk session`** (seu usuário, unit de sessão) tem a conexão com o
   peer, o clipboard e o áudio. Para digitar, pede ao daemon pelo socket. Não
   detém privilégio nenhum.
 
@@ -62,7 +66,7 @@ sem reler custa tempo.
 ## Instalar no Linux
 
 ```bash
-./system/install.sh
+./infra/install.sh
 ```
 
 Roda como usuário comum e pede sudo só nos passos que precisam. Ele compila,
@@ -71,11 +75,11 @@ perfil flat do dispositivo virtual e habilita as duas units.
 
 ## Instalar no Windows
 
-Copie o `conn.exe` para o PC — é o único arquivo que precisa ir. Depois,
+Copie o `synk.exe` para o PC — é o único arquivo que precisa ir. Depois,
 num PowerShell:
 
 ```powershell
-.\system\windows\install.ps1 -Hidden
+.\infra\windows\install.ps1 -Hidden
 ```
 
 Isso registra uma tarefa que inicia o link no seu logon e o reinicia se ele

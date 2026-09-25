@@ -1,6 +1,6 @@
 //go:build linux
 
-package main
+package agent
 
 import (
 	"context"
@@ -8,21 +8,16 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"os"
-	"os/signal"
 	"sync"
-	"syscall"
 	"time"
 
-	"github.com/spf13/cobra"
-
-	"conn/internal/clipboard"
-	"conn/internal/config"
-	"conn/internal/focus"
-	"conn/internal/ipc"
-	"conn/internal/proto"
-	"conn/internal/screen"
-	"conn/internal/transport"
+	"github.com/ViitoJooj/synk/internal/clipboard"
+	"github.com/ViitoJooj/synk/internal/config"
+	"github.com/ViitoJooj/synk/internal/focus"
+	"github.com/ViitoJooj/synk/internal/ipc"
+	"github.com/ViitoJooj/synk/internal/proto"
+	"github.com/ViitoJooj/synk/internal/screen"
+	"github.com/ViitoJooj/synk/internal/transport"
 )
 
 const (
@@ -34,40 +29,29 @@ const (
 	clipboardMaxBytes = 256 * 1024
 )
 
-var sessionCmd = &cobra.Command{
-	Use:   "session",
-	Short: "Accept the peer's connection and apply its input locally",
-	Long: `Run the unprivileged half of conn.
-
-This process owns the network connection, the clipboard and the screen
-geometry. It holds no privilege of its own: to type, it asks the daemon over a
-unix socket.
-
-This machine listens and the peer dials in. That direction is deliberate: an
-inbound listener on Windows needs a firewall rule and an administrator to
-approve it, while an outbound connection needs neither — and this is the side
-whose logs are easy to read when something goes wrong.
-
-Only the peer's own tailnet address is accepted. Nothing else on the tailnet,
-and nothing off it, can connect.`,
-	Args: cobra.NoArgs,
-	RunE: runSession,
-}
-
-func init() { rootCmd.AddCommand(sessionCmd) }
-
-func runSession(cmd *cobra.Command, _ []string) error {
-	cfg, err := loadConfig()
-	if err != nil {
-		return err
+// Run accepts the peer's connection and applies its input locally, until ctx
+// is cancelled.
+//
+// This process owns the network connection, the clipboard and the screen
+// geometry. It holds no privilege of its own: to type, it asks the injector
+// over a unix socket.
+//
+// This machine listens and the peer dials in. That direction is deliberate: an
+// inbound listener on Windows needs a firewall rule and an administrator to
+// approve it, while an outbound connection needs neither — and this is the side
+// whose logs are easy to read when something goes wrong.
+//
+// Only the peer's own tailnet address is accepted. Nothing else on the tailnet,
+// and nothing off it, can connect.
+func Run(ctx context.Context, opts Options) error {
+	cfg := opts.Config
+	if cfg == nil {
+		return errors.New("this machine receives input, so it needs a config naming the peer and its edge")
 	}
 
 	ts := transport.NewTailscale()
 
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
-
-	out := cmd.OutOrStdout()
+	out := opts.Out
 	aviso := func(m string) { fmt.Fprintln(out, m) }
 
 	// Espera o tailscale em vez de sair com erro. Sair fazia o systemd
@@ -107,7 +91,7 @@ func runSession(cmd *cobra.Command, _ []string) error {
 		l.Close()
 	}()
 
-	fmt.Fprintf(out, "conn listening on %s:%d for %s, peer screen on the %s\n",
+	fmt.Fprintf(out, "synk listening on %s:%d for %s, peer screen on the %s\n",
 		self, cfg.Port, cfg.Peer, cfg.EdgeName)
 
 	for ctx.Err() == nil {
@@ -393,7 +377,7 @@ func (s *session) trackCursor(dx, dy int) error {
 // The distance is exact only because the virtual device is on a flat
 // acceleration profile. Under libinput's default adaptive curve a single large
 // delta is scaled by nearly twice — measured here, an intended 500 pixels
-// travelled 934 — and the pointer lands somewhere else entirely. `conn
+// travelled 934 — and the pointer lands somewhere else entirely. `synk
 // status` reports the profile for that reason.
 func (s *session) enterCursor(ratio uint16) error {
 	dx, dy := focus.EnterOffset(s.fsm.RemoteEdge(), ratio, s.w, s.h)

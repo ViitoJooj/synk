@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"conn/internal/proto"
+	"github.com/ViitoJooj/synk/internal/proto"
 )
 
 // These values were read out of this machine's own <linux/uinput.h> and

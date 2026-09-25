@@ -1,6 +1,6 @@
 //go:build windows
 
-package main
+package agent
 
 import (
 	"context"
@@ -8,19 +8,15 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"os"
-	"os/signal"
 	"sync"
-	"syscall"
 	"time"
 
-	"github.com/spf13/cobra"
-
-	"conn/internal/clipboard"
-	"conn/internal/focus"
-	"conn/internal/inputdev"
-	"conn/internal/proto"
-	"conn/internal/transport"
+	"github.com/ViitoJooj/synk/internal/clipboard"
+	"github.com/ViitoJooj/synk/internal/config"
+	"github.com/ViitoJooj/synk/internal/focus"
+	"github.com/ViitoJooj/synk/internal/inputdev"
+	"github.com/ViitoJooj/synk/internal/proto"
+	"github.com/ViitoJooj/synk/internal/transport"
 )
 
 const (
@@ -41,50 +37,34 @@ const (
 	statsEvery = 5 * time.Second
 )
 
-var sessionVerbose bool
-
-var sessionCmd = &cobra.Command{
-	Use:   "session",
-	Short: "Capture this machine's keyboard and mouse and drive the peer with them",
-	Long: `Run the sending half of conn.
-
-This machine owns the physical keyboard and mouse. While the pointer is on this
-screen nothing changes; when it reaches the border the peer sits beyond, input
-is swallowed here and forwarded there instead.
-
-It dials the peer rather than waiting to be dialled, and needs no configuration
-file: the peer is found on the tailnet, and the screen layout arrives in its
-greeting. Nothing to copy onto this machine but the program itself.
-
-Ctrl+Alt+F12 always returns control to this machine, whatever state the link is
-in.`,
-	Args: cobra.NoArgs,
-	RunE: runSession,
-}
-
-func init() {
-	sessionCmd.Flags().BoolVar(&sessionVerbose, "verbose", false,
-		"report captured-event counters, to tell a dead hook from a quiet link")
-	rootCmd.AddCommand(sessionCmd)
-}
-
-func runSession(cmd *cobra.Command, _ []string) error {
+// Run captures this machine's keyboard and mouse and drives the peer with
+// them, reconnecting until ctx is cancelled.
+//
+// This machine owns the physical keyboard and mouse. While the pointer is on
+// this screen nothing changes; when it reaches the border the peer sits beyond,
+// input is swallowed here and forwarded there instead.
+//
+// It dials the peer rather than waiting to be dialled, and needs no
+// configuration file: the peer is found on the tailnet, and the screen layout
+// arrives in its greeting. Nothing to copy onto this machine but the program
+// itself.
+//
+// Ctrl+Alt+F12 always returns control to this machine, whatever state the link
+// is in.
+func Run(ctx context.Context, opts Options) error {
 	capture, err := inputdev.StartCapture(captureBuffer)
 	if err != nil {
 		return err
 	}
 	defer capture.Stop()
 
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
-
-	out := cmd.OutOrStdout()
-	fmt.Fprintln(out, "conn is capturing this keyboard and mouse; Ctrl+Alt+F12 always takes them back")
+	out := opts.Out
+	fmt.Fprintln(out, "synk is capturing this keyboard and mouse; Ctrl+Alt+F12 always takes them back")
 
 	backoff := minBackoff
 	ultimo := ""
 	for ctx.Err() == nil {
-		err := connectAndServe(ctx, out, capture)
+		err := connectAndServe(ctx, out, capture, opts)
 		if ctx.Err() != nil {
 			return nil
 		}
@@ -124,9 +104,9 @@ func errText(err error) string {
 	return err.Error()
 }
 
-func connectAndServe(ctx context.Context, out io.Writer, capture *inputdev.Capture) error {
+func connectAndServe(ctx context.Context, out io.Writer, capture *inputdev.Capture, opts Options) error {
 	ts := transport.NewTailscale()
-	peer, err := resolvePeer(ts, nil)
+	peer, err := ResolvePeer(ts, opts.Peer, opts.Config)
 	if err != nil {
 		return err
 	}
@@ -134,7 +114,7 @@ func connectAndServe(ctx context.Context, out io.Writer, capture *inputdev.Captu
 		return fmt.Errorf("%s is offline", peer.Host)
 	}
 
-	conn, err := transport.Dial(peer.IP, portFor(nil))
+	conn, err := transport.Dial(peer.IP, Port(opts.Port, opts.Config))
 	if err != nil {
 		return err
 	}
@@ -156,7 +136,9 @@ func connectAndServe(ctx context.Context, out io.Writer, capture *inputdev.Captu
 		screenW: w,
 		screenH: h,
 		peerIP:  peer.IP,
-		port:    portFor(nil),
+		cfg:     opts.Config,
+		port:    Port(opts.Port, opts.Config),
+		verbose: opts.Verbose,
 	}
 
 	fmt.Fprintf(out, "connected to %s (%s); this screen is %dx%d, its screen is beyond the %s edge\n",
@@ -199,7 +181,7 @@ func servePeer(ctx context.Context, s *winSession, conn net.Conn) error {
 		readFrames(conn, incoming)
 	}()
 
-	if clipboardEnabled(nil) {
+	if ClipboardEnabled(s.cfg) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -280,6 +262,10 @@ type winSession struct {
 	peerIP string
 	port   int
 
+	// cfg is nil here in practice: this machine reads no file.
+	cfg     *config.Config
+	verbose bool
+
 	captured uint64
 
 	clip     *clipboard.Win32
@@ -291,7 +277,7 @@ type winSession struct {
 func (s *winSession) run(ctx context.Context, incoming <-chan frame) error {
 	events := s.capture.Events()
 
-	stats := newTicker(sessionVerbose, statsEvery)
+	stats := newTicker(s.verbose, statsEvery)
 	defer stats.Stop()
 
 	for {

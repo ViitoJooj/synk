@@ -1,9 +1,9 @@
 <#
 .SYNOPSIS
-  Registra o conn para subir sozinho no logon deste PC Windows.
+  Registra o synk para subir sozinho no logon deste PC Windows.
 
 .DESCRIPTION
-  Cria uma tarefa agendada que inicia `conn.exe session` quando você
+  Cria uma tarefa agendada que inicia `synk.exe session` quando você
   entra na sua conta, e a reinicia se o processo morrer.
 
   Por que no LOGON e não no boot: este lado captura teclado e mouse com hooks
@@ -21,7 +21,7 @@
   quando o motivo muda.
 
 .PARAMETER ExePath
-  Caminho do conn.exe. Sem ele, o script procura em ordem: ao lado deste
+  Caminho do synk.exe. Sem ele, o script procura em ordem: ao lado deste
   arquivo (é onde os dois caem quando você os manda por Taildrop) e depois na
   raiz do repositório, dois níveis acima.
 
@@ -37,7 +37,7 @@
 .EXAMPLE
   .\install.ps1
   .\install.ps1 -Hidden
-  .\install.ps1 -ExePath C:\Tools\conn.exe -Hidden
+  .\install.ps1 -ExePath C:\Tools\synk.exe -Hidden
 
 .NOTES
   Para desfazer:  Unregister-ScheduledTask -TaskName conn -Confirm:$false
@@ -61,9 +61,9 @@ $candidatos = if ($ExePath) {
     @($ExePath)
 } else {
     @(
-        (Join-Path $PSScriptRoot 'conn.exe'),
-        (Join-Path $PSScriptRoot '..\..\conn.exe'),
-        (Join-Path (Get-Location) 'conn.exe')
+        (Join-Path $PSScriptRoot 'synk.exe'),
+        (Join-Path $PSScriptRoot '..\..\synk.exe'),
+        (Join-Path (Get-Location) 'synk.exe')
     )
 }
 
@@ -75,9 +75,9 @@ foreach ($c in $candidatos) {
 
 if (-not $exe) {
     $tentados = ($candidatos | ForEach-Object { "  $_" }) -join "`n"
-    throw "conn.exe nao encontrado. Procurei em:`n$tentados`n" +
+    throw "synk.exe nao encontrado. Procurei em:`n$tentados`n" +
           "Passe o caminho em -ExePath, ou compile com " +
-          "'GOOS=windows go build -o conn.exe ./cmd/conn'."
+          "'GOOS=windows go build -o synk.exe ./cmd/synk'."
 }
 Write-Host "executavel: $exe"
 
@@ -85,7 +85,7 @@ if ($Hidden) {
     # PowerShell escondido no lugar do console. A saida vai para um arquivo,
     # senao ela se perde por completo — e e nela que aparece por que o link
     # esta fora do ar.
-    $log = Join-Path (Split-Path $exe -Parent) 'conn.log'
+    $log = Join-Path (Split-Path $exe -Parent) 'synk.log'
     $inner = "& '$exe' session *> '$log'"
     $action = New-ScheduledTaskAction -Execute 'powershell.exe' `
         -Argument "-NoProfile -NonInteractive -WindowStyle Hidden -Command `"$inner`""
@@ -127,7 +127,7 @@ if (Get-ScheduledTask -TaskName 'wfkit-link' -ErrorAction SilentlyContinue) {
 
 Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger `
     -Settings $settings -Principal $principal -Force `
-    -Description 'Conecta este PC ao notebook Linux (conn).' | Out-Null
+    -Description 'Conecta este PC ao notebook Linux (synk).' | Out-Null
 
 Write-Host "tarefa '$TaskName' registrada, nivel $nivel."
 Write-Host ""

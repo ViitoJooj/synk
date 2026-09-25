@@ -1,4 +1,4 @@
-// Package proto implements the conn wire format: the framed, ordered
+// Package proto implements the synk wire format: the framed, ordered
 // control stream (input events, focus handoff, clipboard) carried over TCP.
 //
 // Audio does not use this package — it rides a separate unreliable UDP path,

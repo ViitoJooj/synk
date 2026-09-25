@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"conn/internal/proto"
+	"github.com/ViitoJooj/synk/internal/proto"
 )
 
 func writeConfig(t *testing.T, body string) string {

@@ -1,4 +1,4 @@
-// Package config loads conn's settings.
+// Package config loads synk's settings.
 //
 // Only the machine that receives input needs a file: it is the one that knows
 // the screen geometry and which border the peer sits beyond. The other side
@@ -14,7 +14,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"conn/internal/proto"
+	"github.com/ViitoJooj/synk/internal/proto"
 )
 
 const (

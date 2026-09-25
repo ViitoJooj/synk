@@ -17,7 +17,7 @@ import (
 
 	"golang.org/x/sys/unix"
 
-	"conn/internal/proto"
+	"github.com/ViitoJooj/synk/internal/proto"
 )
 
 // ioctl request numbers, taken from this machine's <linux/uinput.h> and

@@ -1,4 +1,4 @@
-module conn
+module github.com/ViitoJooj/synk
 
 go 1.25.0
 

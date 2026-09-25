@@ -1,6 +1,6 @@
 //go:build linux
 
-package main
+package agent
 
 import (
 	"bytes"
@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"conn/internal/audio"
-	"conn/internal/transport"
+	"github.com/ViitoJooj/synk/internal/audio"
+	"github.com/ViitoJooj/synk/internal/transport"
 )
 
 // fakeSource stands in for the PipeWire monitor.

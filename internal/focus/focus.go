@@ -9,7 +9,7 @@ package focus
 import (
 	"fmt"
 
-	"conn/internal/proto"
+	"github.com/ViitoJooj/synk/internal/proto"
 )
 
 type Location uint8

@@ -7,7 +7,7 @@ import (
 	"syscall"
 	"time"
 
-	"conn/internal/proto"
+	"github.com/ViitoJooj/synk/internal/proto"
 )
 
 const (

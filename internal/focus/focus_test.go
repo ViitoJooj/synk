@@ -3,7 +3,7 @@ package focus
 import (
 	"testing"
 
-	"conn/internal/proto"
+	"github.com/ViitoJooj/synk/internal/proto"
 )
 
 // The real laptop panel: eDP-1, 1920x1080, scale 1, with the Windows monitor

@@ -1,6 +1,6 @@
 package inputdev
 
-import "conn/internal/proto"
+import "github.com/ViitoJooj/synk/internal/proto"
 
 // Win32 mouse messages and the wheel unit. They live in this build-tag-free
 // file, rather than beside the rest of the Win32 bindings, so the translation

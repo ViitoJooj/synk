@@ -19,8 +19,8 @@ import (
 	"os"
 	"sync"
 
-	"conn/internal/keystate"
-	"conn/internal/proto"
+	"github.com/ViitoJooj/synk/internal/keystate"
+	"github.com/ViitoJooj/synk/internal/proto"
 )
 
 // socketMode keeps the socket to its owner and group. Opening it means being
