@@ -13,18 +13,15 @@ package cli
 import (
 	"context"
 	"errors"
-	"fmt"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"syscall"
 
 	"github.com/spf13/cobra"
 
+	"github.com/ViitoJooj/synk/internal/config"
 	"github.com/ViitoJooj/synk/pkg/errorx"
 )
-
-const configName = "conn.yaml"
 
 var (
 	// linkPeer and linkPort override discovery and the default port. They
@@ -98,21 +95,5 @@ func signalContext() (context.Context, context.CancelFunc) {
 	return signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 }
 
-// configDir is ~/.config/conn: per-user preferences, never system state.
-// Until the rename it was ~/.config/wfkit/link.yaml; infra/install.sh moves
-// an existing one over.
-func configDir() (string, error) {
-	base, err := os.UserConfigDir()
-	if err != nil {
-		return "", fmt.Errorf("locating your config directory: %w", err)
-	}
-	return filepath.Join(base, "conn"), nil
-}
-
-func configPath() (string, error) {
-	dir, err := configDir()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(dir, configName), nil
-}
+func configDir() (string, error)  { return config.Dir() }
+func configPath() (string, error) { return config.Path() }

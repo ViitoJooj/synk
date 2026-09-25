@@ -77,7 +77,7 @@ func (m *Manager) ensureInjector() error {
 		return err
 	}
 	if !s.Installed {
-		return fmt.Errorf("%s is not installed; run infra/install.sh", InjectorUnit)
+		return fmt.Errorf("%s is not installed; run hacks/install.sh", InjectorUnit)
 	}
 	if s.Running() {
 		return nil

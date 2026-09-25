@@ -1,8 +1,9 @@
 // Package service starts, stops and inspects synk's background processes: the
 // systemd units on Linux and the scheduled task on Windows.
 //
-// It does not install them yet; infra/install.sh and infra/windows/install.ps1
-// still do that.
+// It does not install them: hacks/install.sh and infra/windows/install.ps1 do,
+// because installing needs root on Linux and an interactive PowerShell on
+// Windows.
 package service
 
 import (
@@ -11,13 +12,11 @@ import (
 	"strings"
 )
 
-// Names of what is installed today. They still carry the old name, because
-// renaming them means migrating a running install; that happens together with
-// the new config.
+// Names of what infra/ installs.
 const (
-	AgentUnit    = "conn.service"
-	InjectorUnit = "connd.service"
-	TaskName     = "conn"
+	AgentUnit    = "synk-agent.service"
+	InjectorUnit = "synk-injector.service"
+	TaskName     = "synk"
 )
 
 // State is one background process as the service manager sees it.

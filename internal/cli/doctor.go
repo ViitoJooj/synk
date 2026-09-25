@@ -127,10 +127,17 @@ func checkConfig(cfg *config.Config, err error) check {
 		}
 
 	case errors.Is(err, os.ErrNotExist):
+		if old := config.Legacy(); old != "" {
+			return check{
+				name:   "config",
+				detail: "not found at " + path + ", but the old one is at " + old,
+				fix:    "run hacks/install.sh, which moves it and the rest of the old install over",
+			}
+		}
 		return check{
 			name:   "config",
 			detail: "not found at " + path,
-			fix:    "write a conn.yaml there naming the peer and the edge its screen sits beyond, then run 'synk <peer>' to change the peer later",
+			fix:    "write a config.yaml there naming the peer and the edge its screen sits beyond; after that, 'synk <peer>' and 'synk config set' change it",
 		}
 
 	default:

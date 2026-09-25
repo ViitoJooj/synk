@@ -1,12 +1,12 @@
 [Unit]
-# The unprivileged half. It owns the network connection to the peer, the
-# clipboard and (once WASAPI lands) audio. To type, it asks the daemon over the
-# unix socket — it holds no privilege of its own.
+# The agent: the unprivileged half. It owns the network connection to the peer,
+# the clipboard and audio. To type, it asks the injector over the unix socket —
+# it holds no privilege of its own.
 #
 # This is a USER unit on purpose: PipeWire and the Wayland clipboard live in the
 # user session, and reaching them from a system service would mean handing root
 # a way into your desktop.
-Description=WorkflowKit link session
+Description=synk agent: keyboard, mouse, clipboard and audio with the peer
 After=graphical-session.target pipewire.service
 PartOf=graphical-session.target
 
@@ -14,7 +14,7 @@ PartOf=graphical-session.target
 Type=simple
 ExecStart=/usr/local/bin/synk agent
 
-# The peer being asleep is the normal case, not a fault: the session exits,
+# The peer being asleep is the normal case, not a fault: the agent exits,
 # systemd restarts it, and it goes back to waiting.
 Restart=always
 RestartSec=5s

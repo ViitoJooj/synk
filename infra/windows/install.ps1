@@ -40,14 +40,14 @@
   .\install.ps1 -ExePath C:\Tools\synk.exe -Hidden
 
 .NOTES
-  Para desfazer:  Unregister-ScheduledTask -TaskName conn -Confirm:$false
-  Para ver:       Get-ScheduledTask -TaskName conn | Get-ScheduledTaskInfo
-  Para rodar já:  Start-ScheduledTask -TaskName conn
+  Para desfazer:  Unregister-ScheduledTask -TaskName synk -Confirm:$false
+  Para ver:       Get-ScheduledTask -TaskName synk | Get-ScheduledTaskInfo
+  Para rodar já:  Start-ScheduledTask -TaskName synk   (ou: synk up)
 #>
 [CmdletBinding()]
 param(
     [string] $ExePath,
-    [string] $TaskName  = 'conn',
+    [string] $TaskName  = 'synk',
     [switch] $Hidden,
     [switch] $Elevated
 )
@@ -118,11 +118,16 @@ $nivel = if ($Elevated) { 'Highest' } else { 'Limited' }
 $principal = New-ScheduledTaskPrincipal -UserId $conta `
     -LogonType Interactive -RunLevel $nivel
 
-# Nome antigo (wfkit-link, ate 2026-09-24): a tarefa velha subiria o exe
-# velho junto com o novo, e os dois brigariam pela mesma porta.
-if (Get-ScheduledTask -TaskName 'wfkit-link' -ErrorAction SilentlyContinue) {
-    Unregister-ScheduledTask -TaskName 'wfkit-link' -Confirm:$false
-    Write-Host "tarefa antiga 'wfkit-link' removida."
+# Nomes antigos (wfkit-link ate 2026-09-24, conn ate 2026-09-25): a tarefa
+# velha subiria o exe velho junto com o novo, e os dois capturariam o mesmo
+# teclado. Para antes de remover, senao o processo velho continua de pe.
+foreach ($velha in @('wfkit-link', 'conn')) {
+    if ($velha -eq $TaskName) { continue }
+    if (Get-ScheduledTask -TaskName $velha -ErrorAction SilentlyContinue) {
+        Stop-ScheduledTask -TaskName $velha -ErrorAction SilentlyContinue
+        Unregister-ScheduledTask -TaskName $velha -Confirm:$false
+        Write-Host "tarefa antiga '$velha' removida."
+    }
 }
 
 Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger `

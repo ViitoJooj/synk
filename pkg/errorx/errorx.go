@@ -137,3 +137,22 @@ func NotAComputer(name, os string) *Error {
 func Failed(action string, err error) *Error {
 	return &Error{Code: "snk-07", Msg: "could not " + action, Kind: Internal, Err: err}
 }
+
+func NoConfigHere() *Error {
+	return &Error{
+		Code: "snk-08",
+		Msg:  "this machine keeps no config",
+		Kind: User,
+		Hint: "the settings live on the Linux machine, which receives the input; run 'synk config' there. Here, 'synk <peer>' is all there is to choose",
+	}
+}
+
+func BadSetting(err error) *Error {
+	return &Error{
+		Code: "snk-09",
+		Msg:  "cannot change that setting",
+		Kind: User,
+		Hint: "see the keys and their values with 'synk config ls'",
+		Err:  err,
+	}
+}

@@ -26,7 +26,11 @@ const (
 // VirtualNamePrefix marks the devices this tool creates. ListDevices skips
 // them: reading back our own injected events would feed them straight into the
 // sender and loop forever.
-const VirtualNamePrefix = "conn"
+//
+// It is also the device's name, and KDE keys the pointer profile on that name:
+// hacks/install.sh writes the flat profile under it in kcminputrc. Renaming it
+// means rewriting that entry, or the cursor lands in the wrong place again.
+const VirtualNamePrefix = "synk"
 
 // eviocGName builds EVIOCGNAME(len) — _IOR('E', 0x06, char[len]).
 func eviocGName(length int) uintptr {

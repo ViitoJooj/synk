@@ -50,7 +50,7 @@ func checkDaemon(cfg *config.Config) []check {
 		return []check{{
 			name:   "injector",
 			detail: "running, but this session has no permission to open " + socket,
-			fix: "you are in the conn group but this login session predates it; " +
+			fix: "you are in the synk group but this login session predates it; " +
 				"log out and back in, or run: exec su - $USER",
 		}}
 
@@ -127,8 +127,8 @@ func checkPointer() []check {
 			detail: "the virtual pointer is on the adaptive acceleration profile",
 			fix: "the cursor will land in the wrong place after crossing; set a flat profile with:\n" +
 				"    kwriteconfig6 --file kcminputrc --group Libinput --group 7531 --group 1 " +
-				"--group conn --key PointerAccelerationProfile 1\n" +
-				"    then restart the injector: sudo systemctl restart connd",
+				"--group synk --key PointerAccelerationProfile 1\n" +
+				"    then restart the injector: sudo systemctl restart synk-injector",
 		}}
 	}
 	return []check{{name: "pointer", ok: true, detail: "flat profile; injected motion is 1:1"}}

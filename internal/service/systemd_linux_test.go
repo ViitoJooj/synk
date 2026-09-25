@@ -98,7 +98,7 @@ func TestStartRefusesWithoutAnInjector(t *testing.T) {
 	f := &fakeSystemd{units: map[string]string{AgentUnit: stopped}}
 
 	err := NewWithRunner(f).Start()
-	if err == nil || !strings.Contains(err.Error(), "install.sh") {
+	if err == nil || !strings.Contains(err.Error(), "hacks/install.sh") {
 		t.Fatalf("err = %v, want it to say how to install", err)
 	}
 	if len(f.ran) != 0 {

@@ -27,7 +27,7 @@ const (
 	// below the ephemeral range on both Linux (32768+) and Windows (49152+).
 	DefaultPort = 27431
 
-	DefaultSocket = "/run/conn/daemon.sock"
+	DefaultSocket = "/run/synk/injector.sock"
 )
 
 type Audio struct {

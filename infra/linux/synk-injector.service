@@ -2,7 +2,7 @@
 # The privileged half of synk. It opens /dev/uinput and does nothing
 # else: no network, no audio, no clipboard, and — with the Windows PC owning
 # the keyboard — it never reads input either, only injects it.
-Description=WorkflowKit link injector
+Description=synk injector: the only part that can type, and it has no network
 After=systemd-udev-settle.service
 
 [Service]
@@ -11,11 +11,11 @@ ExecStart=/usr/local/bin/synk injector
 Restart=on-failure
 RestartSec=2s
 
-# The socket the unprivileged session connects to. RuntimeDirectory gives it
+# The socket the unprivileged agent connects to. RuntimeDirectory gives it
 # the right owner and group and cleans it up on stop.
-RuntimeDirectory=conn
+RuntimeDirectory=synk
 RuntimeDirectoryMode=0750
-Group=conn
+Group=synk
 
 # The load-bearing one. This process can type on your behalf, so it is given no
 # way to reach the network at all — not the tailnet, not the LAN, nothing. Its

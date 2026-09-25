@@ -46,3 +46,6 @@ func choicePath() (string, error) {
 	}
 	return filepath.Join(dir, "peer"), nil
 }
+
+// keepsConfig: this machine reads no config; see chosenPeer.
+const keepsConfig = false

@@ -31,3 +31,6 @@ func saveChoice(name string) error {
 	}
 	return nil
 }
+
+// keepsConfig: this machine receives input, so it is the one with settings.
+const keepsConfig = true

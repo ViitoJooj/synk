@@ -7,9 +7,9 @@ o teclado vai junto; não há agente na nuvem e não há servidor no meio.
 Extraído de [wfkit](https://github.com/ViitoJooj/wfkit) em 2026-09-05, onde
 vivia como subcomando do CLI. Virou projeto próprio porque é um app de duas
 máquinas com ciclo de vida próprio, não parte do provisionamento de um desktop.
-Chamou-se `wfkit-link` até 2026-09-24 e `conn` até 2026-09-25;
-`infra/install.sh` e `infra/windows/install.ps1` migram uma instalação com o
-nome `wfkit-link`. As units, o grupo e a config ainda usam o nome `conn`.
+Chamou-se `wfkit-link` até 2026-09-24 e `conn` até 2026-09-25.
+`hacks/install.sh` e `infra/windows/install.ps1` migram uma instalação com
+qualquer um dos dois nomes.
 
 ## Como está montado
 
@@ -21,7 +21,9 @@ internal/injector/ o daemon root que abre /dev/uinput
 internal/service/  liga, desliga e lê o estado das units e da tarefa agendada
 internal/          transporte, protocolo, entrada, áudio, clipboard, foco
 pkg/errorx/        os erros com código e dica (snk-NN), no formato do devxx
-infra/             units de systemd, install.sh e install.ps1
+infra/linux/       as units de systemd
+infra/windows/     install.ps1
+hacks/install.sh   instala no Linux e migra os nomes antigos
 ```
 
 ## Comandos
@@ -34,6 +36,7 @@ synk status        agente, injetor, peer e ajustes numa tela
 synk doctor        confere tudo de que o link depende e diz como consertar
 synk up | down | restart
 synk logs [-f] [-n 50] [--injector]
+synk config ls | get <chave> | set <chave> <valor>
 ```
 
 Flags globais: `--json` (para scripts), `-q`, `--peer`, `--port`. Os erros
@@ -51,9 +54,29 @@ e ficam fora da ajuda. Os nomes antigos, `session` e `daemon`, continuam
 aceitos para as units já instaladas.
 
 A direção não muda com `synk <peer>`: o Linux continua escutando e o Windows
-continua discando. No Linux o peer é gravado no `conn.yaml`, trocando só a
+continua discando. No Linux o peer é gravado no `config.yaml`, trocando só a
 linha `peer:`. No Windows, que não lê config de propósito, fica num arquivo
-`peer` com um nome só, em `%APPDATA%\conn\`.
+`peer` com um nome só, em `%APPDATA%\synk\`.
+
+## Configuração
+
+Só o Linux tem config: `~/.config/synk/config.yaml`. É ele que recebe a
+entrada, então é ele que sabe onde fica a tela do outro. O Windows descobre o
+resto no hello da conexão.
+
+```yaml
+peer: desktop-6v4goh8   # a máquina do outro lado, como o `synk ls` mostra
+edge: right             # a borda desta tela além da qual fica a do peer
+clipboard: true
+audio:
+  playback: true        # o som daqui sai nas caixas do peer
+  mic: true
+# port: 27431           # o padrão; 24800 é do Synergy/Deskflow, evite
+```
+
+`synk config set audio.mic off` troca uma linha e deixa o resto do arquivo,
+comentários inclusive, como estava. O agente pega a mudança no
+`synk restart`.
 
 Dois processos no Linux, de propósito:
 
@@ -99,12 +122,22 @@ sem reler custa tempo.
 ## Instalar no Linux
 
 ```bash
-./infra/install.sh
+./hacks/install.sh
 ```
 
 Roda como usuário comum e pede sudo só nos passos que precisam. Ele compila,
-instala em `/usr/local/bin`, cria o grupo que controla o socket, escreve o
-perfil flat do dispositivo virtual e habilita as duas units.
+instala em `/usr/local/bin/synk`, cria o grupo `synk` que controla o socket,
+escreve o perfil flat do dispositivo virtual e habilita as duas units:
+`synk-injector` (sistema) e `synk-agent` (usuário). Rodar de novo não estraga
+nada.
+
+Se achar uma instalação de `wfkit-link` ou `conn`, ele migra: copia antes
+tudo o que vai apagar ou reescrever para `~/.local/share/synk/backup-<data>/`,
+leva a config para `~/.config/synk/config.yaml`, **renomeia** o grupo antigo
+para `synk` (o GID continua o mesmo, então não precisa deslogar), troca o
+perfil do ponteiro para o nome novo do dispositivo e só então desliga o velho e
+liga o novo. O link fica fora do ar só por esses segundos. O protocolo não
+mudou: um PC ainda rodando o exe antigo continua conectando.
 
 ## Instalar no Windows
 
