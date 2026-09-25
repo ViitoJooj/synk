@@ -8,9 +8,13 @@
 package agent
 
 import (
+	"context"
+	"fmt"
 	"io"
+	"sync"
 
 	"github.com/ViitoJooj/synk/internal/config"
+	"github.com/ViitoJooj/synk/internal/control"
 	"github.com/ViitoJooj/synk/internal/transport"
 )
 
@@ -29,6 +33,103 @@ type Options struct {
 	Verbose bool
 
 	Out io.Writer
+
+	// Reload reads the settings again, for a change made while the agent
+	// runs: `synk <peer>`, `synk config set`, the UI. Without it, a reload
+	// restarts the link with the options it already had.
+	Reload func() (Options, error)
+}
+
+// Run is the agent: the control API and the link, with one life cycle.
+//
+// The link runs until ctx is cancelled. A reload cancels only the link,
+// reads the settings again and starts it over, all in this process: the
+// control socket stays up, so the UI never sees the agent disappear, and
+// Windows does not wait out the scheduled task's one-minute restart.
+//
+// Failing to open the control socket is reported and survived. The link is
+// what the agent is for; the API is how it is watched.
+func Run(ctx context.Context, opts Options) error {
+	a := &runner{opts: opts, st: newState(role), ts: transport.NewTailscale()}
+
+	if l, err := control.Listen(control.Address()); err != nil {
+		fmt.Fprintf(opts.Out, "control API off: %v\n", err)
+	} else {
+		// Its own context: when the link fails and Run returns, the server
+		// has to stop too, or Run would wait on it forever and the service
+		// manager would see a hung agent instead of one to restart.
+		srvCtx, stopSrv := context.WithCancel(ctx)
+		srv := a.server()
+		done := make(chan struct{})
+		go func() {
+			defer close(done)
+			if err := srv.Serve(srvCtx, l); err != nil {
+				fmt.Fprintf(opts.Out, "control API stopped: %v\n", err)
+			}
+		}()
+		defer func() {
+			stopSrv()
+			<-done
+		}()
+	}
+
+	for {
+		linkCtx, cancel := context.WithCancel(ctx)
+		a.mu.Lock()
+		a.cancelLink, a.reloading = cancel, false
+		current := a.opts
+		a.mu.Unlock()
+
+		err := startLink(linkCtx, current, a.st)
+		cancel()
+		if ctx.Err() != nil {
+			return nil
+		}
+
+		a.mu.Lock()
+		again := a.reloading
+		a.mu.Unlock()
+		if !again {
+			return err
+		}
+		fmt.Fprintln(opts.Out, "settings changed; restarting the link")
+	}
+}
+
+// startLink is runLink, replaced in tests by a link that needs no peer.
+var startLink = runLink
+
+// runner is the state Run shares with the control API's handlers.
+type runner struct {
+	st *state
+	ts *transport.Tailscale
+
+	mu         sync.Mutex
+	opts       Options
+	cancelLink context.CancelFunc
+	reloading  bool
+}
+
+// reload reads the settings and restarts the link with them. Settings that do
+// not load leave the running link alone: better the old settings working than
+// the new ones not.
+func (a *runner) reload() error {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	if a.opts.Reload != nil {
+		next, err := a.opts.Reload()
+		if err != nil {
+			return err
+		}
+		next.Reload = a.opts.Reload
+		a.opts = next
+	}
+	a.reloading = true
+	if a.cancelLink != nil {
+		a.cancelLink()
+	}
+	return nil
 }
 
 // ResolvePeer names the other machine: the flag first, then the config, and

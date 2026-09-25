@@ -31,8 +31,11 @@ const (
 	clipboardMaxBytes = 256 * 1024
 )
 
-// Run accepts the peer's connection and applies its input locally, until ctx
-// is cancelled.
+// role is how this side takes part in the link.
+const role = "listener"
+
+// runLink accepts the peer's connection and applies its input locally, until
+// ctx is cancelled.
 //
 // This process owns the network connection, the clipboard and the screen
 // geometry. It holds no privilege of its own: to type, it asks the injector
@@ -45,7 +48,7 @@ const (
 //
 // Only the peer's own tailnet address is accepted. Nothing else on the tailnet,
 // and nothing off it, can connect.
-func Run(ctx context.Context, opts Options) error {
+func runLink(ctx context.Context, opts Options, st *state) error {
 	cfg := opts.Config
 	if cfg == nil {
 		return errors.New("this machine receives input, so it needs a config naming the peer and its edge")
@@ -69,6 +72,8 @@ func Run(ctx context.Context, opts Options) error {
 		}
 		return err
 	}
+
+	st.waiting(cfg.Peer)
 
 	// Só faz sentido anunciar link quando há com quem falar. O peer continua
 	// listado no tailnet com a máquina desligada, só que com Online falso.
@@ -105,7 +110,7 @@ func Run(ctx context.Context, opts Options) error {
 			fmt.Fprintf(out, "accept failed: %v\n", err)
 			continue
 		}
-		servePeer(ctx, out, conn, ts, cfg, self)
+		servePeer(ctx, out, conn, ts, cfg, self, st)
 	}
 	return nil
 }
@@ -113,7 +118,7 @@ func Run(ctx context.Context, opts Options) error {
 // servePeer runs one connection to completion. Every exit path closes the
 // daemon socket, which is what makes the daemon release anything still held —
 // so a dropped link can never leave a key down on this machine.
-func servePeer(ctx context.Context, out io.Writer, conn net.Conn, ts *transport.Tailscale, cfg *config.Config, self string) {
+func servePeer(ctx context.Context, out io.Writer, conn net.Conn, ts *transport.Tailscale, cfg *config.Config, self string, st *state) {
 	defer conn.Close()
 	transport.NoDelay(conn)
 
@@ -168,6 +173,7 @@ func servePeer(ctx context.Context, out io.Writer, conn net.Conn, ts *transport.
 		peer.Host, peer.IP, geom.Describe(), cfg.EdgeName)
 
 	s := &session{
+		st:     st,
 		conn:   &lockedConn{conn: conn},
 		daemon: daemon,
 		fsm:    fsm,
@@ -179,6 +185,21 @@ func servePeer(ctx context.Context, out io.Writer, conn net.Conn, ts *transport.
 	if err := s.parkCursor(); err != nil {
 		fmt.Fprintf(out, "could not park the cursor: %v\n", err)
 	}
+
+	st.connected(peer.Host, peer.IP, cfg.Clipboard, "peer")
+
+	// The read loop blocks in ReadFrame and knows nothing of ctx. Until a
+	// reload existed, the process simply died on SIGTERM; now the link has to
+	// stop on its own while the agent carries on, so ctx ends the read.
+	served := make(chan struct{})
+	defer close(served)
+	go func() {
+		select {
+		case <-ctx.Done():
+			conn.SetReadDeadline(time.Now())
+		case <-served:
+		}
+	}()
 
 	var wg sync.WaitGroup
 	loopCtx, cancel := context.WithCancel(ctx)
@@ -209,7 +230,17 @@ func servePeer(ctx context.Context, out io.Writer, conn net.Conn, ts *transport.
 	// Whatever happened, the peer no longer has focus here; releasing is the
 	// last thing done before the socket closes.
 	_ = daemon.ReleaseAll()
-	fmt.Fprintf(out, "%s disconnected: %v\n", peer.Host, err)
+	if ctx.Err() != nil {
+		// Stopped on purpose, by a reload or by the agent stopping: not a
+		// failure worth keeping as the reason the link went down.
+		err = nil
+	}
+	st.disconnected(err)
+	if err == nil {
+		fmt.Fprintf(out, "%s disconnected: the link is restarting\n", peer.Host)
+	} else {
+		fmt.Fprintf(out, "%s disconnected: %v\n", peer.Host, err)
+	}
 }
 
 // injector is the subset of the daemon client the session drives.
@@ -244,6 +275,7 @@ func (c *lockedConn) read() (proto.MsgType, []byte, error) {
 }
 
 type session struct {
+	st     *state
 	conn   *lockedConn
 	daemon injector
 	fsm    *focus.Machine
@@ -321,6 +353,7 @@ func (s *session) handle(typ proto.MsgType, payload []byte) error {
 		if err := s.enterCursor(f.Ratio); err != nil {
 			return err
 		}
+		s.st.focus("local")
 		fmt.Fprintln(s.out, "focus taken by this machine")
 		return nil
 
@@ -328,6 +361,7 @@ func (s *session) handle(typ proto.MsgType, payload []byte) error {
 		// The peer took focus back on its own initiative; drop anything held
 		// so nothing is left pressed here.
 		s.fsm.Leave()
+		s.st.focus("peer")
 		if err := s.daemon.ReleaseAll(); err != nil {
 			return err
 		}
@@ -368,6 +402,7 @@ func (s *session) trackCursor(dx, dy int) error {
 	if err := s.parkCursor(); err != nil {
 		return err
 	}
+	s.st.focus("peer")
 	fmt.Fprintln(s.out, "focus handed back to the peer")
 	return s.conn.send(proto.MsgFocusLeave, proto.FocusEnter{
 		Edge:  s.fsm.RemoteEdge().Opposite(),

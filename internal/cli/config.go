@@ -1,11 +1,13 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/spf13/cobra"
 
 	"github.com/ViitoJooj/synk/internal/config"
+	"github.com/ViitoJooj/synk/internal/control"
 	"github.com/ViitoJooj/synk/pkg/errorx"
 )
 
@@ -17,7 +19,7 @@ var configCmd = &cobra.Command{
 Only the Linux machine has settings: it receives the input, so it is the one
 that knows where the peer's screen is. 'synk config set' changes one line of
 the file and leaves your comments where they were; the agent picks the change
-up on 'synk restart'.`,
+up at once.`,
 	Example: `  synk config ls
   synk config get edge
   synk config set audio.mic off`,
@@ -122,6 +124,16 @@ func runConfigSet(cmd *cobra.Command, args []string) error {
 	if err := config.Set(path, args[0], args[1]); err != nil {
 		return errorx.BadSetting(err)
 	}
-	say(cmd.OutOrStdout(), "%s set; run 'synk restart' for the agent to use it", args[0])
+
+	// A running agent picks it up in place; one that is stopped reads the
+	// file when it starts.
+	switch err := call("reload", nil, nil); {
+	case err == nil:
+		say(cmd.OutOrStdout(), "%s set, and the agent is using it", args[0])
+	case errors.Is(err, control.ErrNotRunning):
+		say(cmd.OutOrStdout(), "%s set; the agent will use it when it starts", args[0])
+	default:
+		return err
+	}
 	return nil
 }

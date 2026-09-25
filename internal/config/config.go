@@ -31,8 +31,8 @@ const (
 )
 
 type Audio struct {
-	Playback bool `yaml:"playback"`
-	Mic      bool `yaml:"mic"`
+	Playback bool `yaml:"playback" json:"playback"`
+	Mic      bool `yaml:"mic" json:"mic"`
 }
 
 type Config struct {

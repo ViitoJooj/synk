@@ -4,6 +4,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/ViitoJooj/synk/internal/agent"
+	"github.com/ViitoJooj/synk/internal/config"
 )
 
 // agentVerbose is set by a flag only Windows has: counters of captured events
@@ -34,11 +35,24 @@ func runAgent(cmd *cobra.Command, _ []string) error {
 	ctx, stop := signalContext()
 	defer stop()
 
-	return agent.Run(ctx, agent.Options{
+	return agent.Run(ctx, agentOptions(cmd, cfg))
+}
+
+// agentOptions builds what the agent runs with, and how it rebuilds that when
+// the settings change under it.
+func agentOptions(cmd *cobra.Command, cfg *config.Config) agent.Options {
+	return agent.Options{
 		Config:  cfg,
 		Peer:    chosenPeer(cfg),
 		Port:    linkPort,
 		Verbose: agentVerbose,
 		Out:     cmd.OutOrStdout(),
-	})
+		Reload: func() (agent.Options, error) {
+			cfg, err := loadConfig()
+			if err != nil {
+				return agent.Options{}, err
+			}
+			return agentOptions(cmd, cfg), nil
+		},
+	}
 }

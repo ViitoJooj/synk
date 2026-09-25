@@ -66,6 +66,7 @@ func (s *session) runPlayback(ctx context.Context, self, peerIP string, port int
 		fmt.Fprintln(s.out, "audio: this machine's speakers muted while the peer is playing")
 	}
 
+	s.st.audio("waiting")
 	fmt.Fprintf(s.out, "audio: capturing this machine's output, waiting for %s to ask for it\n", peerIP)
 
 	// Closing the socket is what unblocks both loops.
@@ -108,6 +109,7 @@ func (s *session) readAudio(conn *net.UDPConn, peerIP string, peer *atomic.Point
 		peer.Store(from)
 		if !announced {
 			announced = true
+			s.st.audio("flowing")
 			fmt.Fprintf(s.out, "audio: %s is listening; playback is flowing\n", from)
 		}
 	}

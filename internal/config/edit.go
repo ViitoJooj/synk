@@ -255,3 +255,20 @@ func parseBool(s string) (any, error) {
 	}
 	return nil, fmt.Errorf("%q is not on or off", s)
 }
+
+// Setting is one key and its current value, as `synk config ls` and the
+// control API list them.
+type Setting struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+	Help  string `json:"help"`
+}
+
+// List is every key's value in cfg, defaults applied.
+func List(cfg *Config) []Setting {
+	out := make([]Setting, len(Keys))
+	for i, k := range Keys {
+		out[i] = Setting{Key: k.Name, Value: k.Get(cfg), Help: k.Help}
+	}
+	return out
+}

@@ -40,7 +40,7 @@ const (
 // arranged this way: the peer cannot know where to send until it has heard from
 // us, and an inbound datagram nobody asked for would need an administrator to
 // let it through.
-func runPlayback(ctx context.Context, out writerFunc, peerIP string, port int) {
+func runPlayback(ctx context.Context, out writerFunc, peerIP string, port int, st *state) {
 	// COM is per thread, and the interfaces the renderer creates here are used
 	// by its own loop, so this goroutine is pinned for as long as they live.
 	runtime.LockOSThread()
@@ -70,6 +70,7 @@ func runPlayback(ctx context.Context, out writerFunc, peerIP string, port int) {
 	}
 	defer renderer.Close()
 
+	st.audio("waiting")
 	out("audio: playing %s's output on this machine's speakers\n", peerIP)
 
 	go func() {
@@ -78,7 +79,7 @@ func runPlayback(ctx context.Context, out writerFunc, peerIP string, port int) {
 	}()
 
 	go keepAlive(ctx, conn)
-	receivePlayback(conn, renderer, out)
+	receivePlayback(conn, renderer, out, st)
 }
 
 // keepAlive holds the return path open.
@@ -105,7 +106,7 @@ func keepAlive(ctx context.Context, conn interface{ Write([]byte) (int, error) }
 // The socket is connected to the peer, so the operating system already refuses
 // datagrams from anywhere else and there is no per-packet address check to make
 // here.
-func receivePlayback(conn interface{ Read([]byte) (int, error) }, renderer *audio.Renderer, out writerFunc) {
+func receivePlayback(conn interface{ Read([]byte) (int, error) }, renderer *audio.Renderer, out writerFunc, st *state) {
 	buf := make([]byte, audioReadBuffer)
 	var announced bool
 
@@ -122,6 +123,7 @@ func receivePlayback(conn interface{ Read([]byte) (int, error) }, renderer *audi
 
 		if !announced {
 			announced = true
+			st.audio("flowing")
 			out("audio: sound is arriving from the peer\n")
 		}
 		renderer.Push(seq, pcm)

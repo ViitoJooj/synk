@@ -37,7 +37,10 @@ const (
 	statsEvery = 5 * time.Second
 )
 
-// Run captures this machine's keyboard and mouse and drives the peer with
+// role is how this side takes part in the link.
+const role = "dialer"
+
+// runLink captures this machine's keyboard and mouse and drives the peer with
 // them, reconnecting until ctx is cancelled.
 //
 // This machine owns the physical keyboard and mouse. While the pointer is on
@@ -51,7 +54,7 @@ const (
 //
 // Ctrl+Alt+F12 always returns control to this machine, whatever state the link
 // is in.
-func Run(ctx context.Context, opts Options) error {
+func runLink(ctx context.Context, opts Options, st *state) error {
 	capture, err := inputdev.StartCapture(captureBuffer)
 	if err != nil {
 		return err
@@ -64,7 +67,7 @@ func Run(ctx context.Context, opts Options) error {
 	backoff := minBackoff
 	ultimo := ""
 	for ctx.Err() == nil {
-		err := connectAndServe(ctx, out, capture, opts)
+		err := connectAndServe(ctx, out, capture, opts, st)
 		if ctx.Err() != nil {
 			return nil
 		}
@@ -104,12 +107,13 @@ func errText(err error) string {
 	return err.Error()
 }
 
-func connectAndServe(ctx context.Context, out io.Writer, capture *inputdev.Capture, opts Options) error {
+func connectAndServe(ctx context.Context, out io.Writer, capture *inputdev.Capture, opts Options, st *state) error {
 	ts := transport.NewTailscale()
 	peer, err := ResolvePeer(ts, opts.Peer, opts.Config)
 	if err != nil {
 		return err
 	}
+	st.waiting(peer.Host)
 	if !peer.Online {
 		return fmt.Errorf("%s is offline", peer.Host)
 	}
@@ -129,6 +133,7 @@ func connectAndServe(ctx context.Context, out io.Writer, capture *inputdev.Captu
 
 	w, h := inputdev.ScreenSize()
 	s := &winSession{
+		st:      st,
 		conn:    &lockedConn{conn: conn},
 		capture: capture,
 		edge:    peerEdge.Opposite(),
@@ -144,7 +149,14 @@ func connectAndServe(ctx context.Context, out io.Writer, capture *inputdev.Captu
 	fmt.Fprintf(out, "connected to %s (%s); this screen is %dx%d, its screen is beyond the %s edge\n",
 		peer.Host, peer.IP, w, h, s.edge)
 
-	if err := servePeer(ctx, s, conn); err != nil {
+	st.connected(peer.Host, peer.IP, ClipboardEnabled(opts.Config), "local")
+	err = servePeer(ctx, s, conn)
+	if ctx.Err() != nil {
+		st.disconnected(nil) // stopped on purpose, not a failure
+	} else {
+		st.disconnected(err)
+	}
+	if err != nil {
 		return fmt.Errorf("%w: %v", errLinkWasEstablished, err)
 	}
 	return errLinkWasEstablished
@@ -194,7 +206,7 @@ func servePeer(ctx context.Context, s *winSession, conn net.Conn) error {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		runPlayback(loopCtx, printTo(s.out), s.peerIP, s.port)
+		runPlayback(loopCtx, printTo(s.out), s.peerIP, s.port, s.st)
 	}()
 
 	return s.run(loopCtx, incoming)
@@ -244,6 +256,7 @@ func (c *lockedConn) send(typ proto.MsgType, payload []byte) error {
 }
 
 type winSession struct {
+	st      *state
 	conn    *lockedConn
 	capture *inputdev.Capture
 	out     io.Writer
@@ -397,6 +410,7 @@ func (s *winSession) maybeHandOff(x, y int) error {
 	// otherwise land on this machine.
 	s.capture.SetSuppress(true)
 	s.remoteHasFocus = true
+	s.st.focus("peer")
 	fmt.Fprintln(s.out, "focus handed to the peer")
 
 	return s.conn.send(proto.MsgFocusEnter, proto.FocusEnter{
@@ -440,6 +454,7 @@ func (s *winSession) takeFocusBack(why string, edge proto.Edge, ratio uint16) {
 
 	s.capture.SetSuppress(false)
 	s.remoteHasFocus = false
+	s.st.focus("local")
 
 	// Instrumento, não enfeite: este caminho só existe no Windows e não pode
 	// ser exercitado daqui. Sem ler de volta, um warp que não pegou é

@@ -20,6 +20,7 @@ internal/agent/    o processo que fica de pé: link, clipboard, áudio
 internal/injector/ o daemon root que abre /dev/uinput
 internal/service/  liga, desliga e lê o estado das units e da tarefa agendada
 internal/          transporte, protocolo, entrada, áudio, clipboard, foco
+internal/control/  a API local: socket unix / named pipe, JSON por linha
 pkg/errorx/        os erros com código e dica (snk-NN), no formato do devxx
 infra/linux/       as units de systemd
 infra/windows/     install.ps1
@@ -32,7 +33,7 @@ hacks/install.sh   instala no Linux e migra os nomes antigos
 synk <peer>        passa a ligar com essa máquina e reinicia o agente. Aceita o
                    nome ou o SO: "synk windows" escolhe o único Windows online
 synk ls            as máquinas da tailnet; * marca a atual
-synk status        agente, injetor, peer e ajustes numa tela
+synk status [-w]   agente, link, peer e ajustes numa tela; -w segue ao vivo
 synk doctor        confere tudo de que o link depende e diz como consertar
 synk up | down | restart
 synk logs [-f] [-n 50] [--injector]
@@ -48,6 +49,31 @@ error: more than one macos machine is online (mac, mac-old)
 error_type: user error.
 message: name the one you want: synk mac
 ```
+
+## API de controle
+
+O agente responde numa API local, que é por onde `synk status`, `synk <peer>`,
+`synk config set` e a UI falam com ele. É JSON, uma mensagem por linha, num
+socket unix no Linux (`$XDG_RUNTIME_DIR/synk/control.sock`, 0600, e o uid de
+quem conecta é conferido) e num named pipe no Windows
+(`\\.\pipe\synk-control-<usuário>`, com ACL só do usuário). Uma conexão
+leva um pedido e a resposta:
+
+```
+→ {"verb":"connect","args":{"peer":"windows"}}
+← {"ok":true,"result":{"name":"desktop-6v4goh8","os":"windows",...}}
+```
+
+Verbos: `status`, `peers`, `connect`, `reload`, `config.ls`, `config.set` e
+`events`, que fica aberto e manda o status inteiro a cada mudança. Os erros
+vêm com o mesmo código e dica da linha de comando.
+
+`connect`, `reload` e `config.set` reiniciam só o link, dentro do processo: o
+socket continua de pé, e no Windows não se espera o minuto da tarefa
+agendada. Uma config que não carrega deixa o link antigo rodando.
+
+É separada do socket do injetor de propósito: por ali se pede para digitar,
+por aqui só se muda ajuste.
 
 `synk agent` e `synk injector` são o que o systemd e a tarefa agendada rodam,
 e ficam fora da ajuda. Os nomes antigos, `session` e `daemon`, continuam
@@ -75,8 +101,8 @@ audio:
 ```
 
 `synk config set audio.mic off` troca uma linha e deixa o resto do arquivo,
-comentários inclusive, como estava. O agente pega a mudança no
-`synk restart`.
+comentários inclusive, como estava. Com o agente rodando, ele passa a usar o
+valor na hora.
 
 Dois processos no Linux, de propósito:
 
