@@ -31,6 +31,10 @@ type Peer struct {
 	// Direct reports a peer-to-peer path. A relayed peer goes through a DERP
 	// server, which is fine for audio and awful for pointer latency.
 	Direct bool
+
+	// hostName is the machine's own name, which a config may use instead of
+	// the MagicDNS label in Host.
+	hostName string
 }
 
 // Runner executes an external command, injected so tests never need a real
@@ -232,6 +236,8 @@ func peerOf(n node, ip string) Peer {
 		OS:     n.OS,
 		Online: n.Online,
 		Direct: n.CurAddr != "",
+
+		hostName: n.HostName,
 	}
 }
 

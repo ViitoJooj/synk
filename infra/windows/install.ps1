@@ -3,7 +3,7 @@
   Registra o synk para subir sozinho no logon deste PC Windows.
 
 .DESCRIPTION
-  Cria uma tarefa agendada que inicia `synk.exe session` quando você
+  Cria uma tarefa agendada que inicia `synk.exe agent` quando você
   entra na sua conta, e a reinicia se o processo morrer.
 
   Por que no LOGON e não no boot: este lado captura teclado e mouse com hooks
@@ -86,12 +86,12 @@ if ($Hidden) {
     # senao ela se perde por completo — e e nela que aparece por que o link
     # esta fora do ar.
     $log = Join-Path (Split-Path $exe -Parent) 'synk.log'
-    $inner = "& '$exe' session *> '$log'"
+    $inner = "& '$exe' agent *> '$log'"
     $action = New-ScheduledTaskAction -Execute 'powershell.exe' `
         -Argument "-NoProfile -NonInteractive -WindowStyle Hidden -Command `"$inner`""
     Write-Host "log: $log"
 } else {
-    $action = New-ScheduledTaskAction -Execute $exe -Argument 'session'
+    $action = New-ScheduledTaskAction -Execute $exe -Argument 'agent'
 }
 
 # Atraso curto: nao e necessario (o binario espera o tailscale sozinho), mas

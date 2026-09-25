@@ -1,164 +1,122 @@
 package cli
 
 import (
-	"errors"
 	"fmt"
-	"io"
-	"os"
+	"strings"
 	"text/tabwriter"
 
 	"github.com/spf13/cobra"
 
 	"github.com/ViitoJooj/synk/internal/agent"
 	"github.com/ViitoJooj/synk/internal/config"
+	"github.com/ViitoJooj/synk/internal/service"
 	"github.com/ViitoJooj/synk/internal/transport"
 )
 
 var statusCmd = &cobra.Command{
 	Use:   "status",
-	Short: "Show whether the link is ready, and what is missing if not",
-	Long: `Check every part the link depends on and report what is wrong.
+	Short: "Show the agent, the peer and the settings in one screen",
+	Long: `Show what synk is doing: whether the agent is running, which machine it
+links with and whether that machine is reachable, and what is switched on.
 
-Run this before ` + "`synk session`" + ` whenever something is not working. It
-answers the questions in the order they matter: is the configuration readable,
-is Tailscale up, is the peer online, is the privileged daemon running, and can
-the two machines actually reach each other.`,
+This reports; it does not diagnose. When something is wrong, 'synk doctor'
+says what and how to fix it.`,
 	Args: cobra.NoArgs,
 	RunE: runStatus,
 }
 
 func init() { rootCmd.AddCommand(statusCmd) }
 
-// check is one line of the report: what was inspected, what was found, and —
-// when something is wrong — what to do about it.
-type check struct {
-	name   string
-	ok     bool
-	detail string
-	fix    string
+type statusJSON struct {
+	Services []service.State `json:"services"`
+	Peer     *peerItem       `json:"peer"`
+	// PeerError says why there is no peer, when there is none.
+	PeerError string        `json:"peer_error,omitempty"`
+	Settings  *settingsJSON `json:"settings,omitempty"`
+}
+
+type settingsJSON struct {
+	Edge      string       `json:"edge"`
+	Port      int          `json:"port"`
+	Clipboard bool         `json:"clipboard"`
+	Audio     config.Audio `json:"audio"`
 }
 
 func runStatus(cmd *cobra.Command, _ []string) error {
+	var st statusJSON
+
+	states, err := service.New().States()
+	if err != nil {
+		return err
+	}
+	st.Services = states
+
 	cfg, cfgErr := loadConfig()
+	if cfg != nil {
+		st.Settings = &settingsJSON{
+			Edge:      cfg.EdgeName,
+			Port:      cfg.Port,
+			Clipboard: cfg.Clipboard,
+			Audio:     cfg.Audio,
+		}
+	}
 
-	checks := []check{checkConfig(cfg, cfgErr)}
-
-	self, peer, tsChecks := checkTailscale(transport.NewTailscale(), cfg)
-	checks = append(checks, tsChecks...)
-	checks = append(checks, checkDaemon(cfg)...)
-	checks = append(checks, checkPointer()...)
-	checks = append(checks, checkLink(cfg, self, peer)...)
+	ts := transport.NewTailscale()
+	if peer, err := agent.ResolvePeer(ts, chosenPeer(cfg), cfg); err != nil {
+		st.PeerError = err.Error()
+	} else {
+		st.Peer = &peerItem{
+			Name:     peer.Host,
+			OS:       peer.OS,
+			IP:       peer.IP,
+			Online:   peer.Online,
+			Direct:   peer.Direct,
+			Linkable: peer.CanRunTheLink(),
+			Current:  true,
+		}
+	}
 
 	out := cmd.OutOrStdout()
+	if asJSON {
+		return printJSON(out, st)
+	}
+
 	w := tabwriter.NewWriter(out, 0, 0, 2, ' ', 0)
-	failed := 0
-	for _, c := range checks {
-		mark := "ok"
-		if !c.ok {
-			mark = "--"
-			failed++
-		}
-		fmt.Fprintf(w, "  %s\t%s\t%s\n", mark, c.name, c.detail)
-	}
-	w.Flush()
-
-	if failed == 0 {
-		fmt.Fprintln(out, "\nEverything the link needs is in place.")
-		return nil
+	for _, s := range st.Services {
+		fmt.Fprintf(w, "%s\t%s\t%s\n", s.Name, serviceWord(s), s.Unit)
 	}
 
-	fmt.Fprintln(out, "\nTo fix:")
-	for _, c := range checks {
-		if !c.ok && c.fix != "" {
-			fmt.Fprintf(out, "  %s: %s\n", c.name, c.fix)
-		}
-	}
-	return nil
-}
-
-// checkConfig reports the settings file. A nil config with no error is the
-// sending machine, which reads none by design.
-func checkConfig(cfg *config.Config, err error) check {
-	path, pathErr := configPath()
-	if pathErr != nil {
-		return check{name: "config", detail: pathErr.Error()}
+	if st.Peer != nil {
+		p := st.Peer
+		fmt.Fprintf(w, "peer\t%s\t%s, %s, %s\n", p.Name, p.OS, p.IP, lsStatus(*p)+", "+lsPath(*p))
+	} else {
+		fmt.Fprintf(w, "peer\tunknown\t%s\n", st.PeerError)
 	}
 
 	switch {
-	case err == nil && cfg == nil:
-		return check{
-			name:   "config",
-			ok:     true,
-			detail: "none needed on this machine; the peer sends what is required",
-		}
+	case st.Settings != nil:
+		s := st.Settings
+		fmt.Fprintf(w, "edge\t%s\tthe peer's screen is beyond this one's %s edge\n", s.Edge, s.Edge)
+		fmt.Fprintf(w, "clipboard\t%s\n", onOff(s.Clipboard))
+		fmt.Fprintf(w, "audio\tplayback %s, mic %s\n", onOff(s.Audio.Playback), onOff(s.Audio.Mic))
+	case cfgErr != nil:
+		fmt.Fprintf(w, "config\tunreadable\t%v\n", cfgErr)
+	}
+	return w.Flush()
+}
 
-	case err == nil:
-		return check{
-			name: "config",
-			ok:   true,
-			detail: fmt.Sprintf("peer %s, port %d, peer screen on the %s",
-				cfg.Peer, cfg.Port, cfg.EdgeName),
-		}
-
-	case errors.Is(err, os.ErrNotExist):
-		return check{
-			name:   "config",
-			detail: "not found at " + path,
-			fix:    "write a conn.yaml there naming the peer and the edge its screen sits beyond",
-		}
-
+// serviceWord is the state as one phrase: "running", "stopped", "failed".
+func serviceWord(s service.State) string {
+	switch {
+	case !s.Installed:
+		return "not installed"
+	case s.Running():
+		return "running"
+	case s.Active == "failed":
+		return "failed"
+	case s.Active == "inactive", s.Active == "Ready":
+		return "stopped"
 	default:
-		return check{name: "config", detail: err.Error(), fix: "correct " + path}
+		return strings.ToLower(s.Active)
 	}
 }
-
-// checkTailscale reports this machine's address and the peer's, and returns
-// both so the platform check can go on to test the path between them.
-func checkTailscale(ts *transport.Tailscale, cfg *config.Config) (string, *transport.Peer, []check) {
-	self, err := ts.Self()
-	if err != nil {
-		return "", nil, []check{{
-			name:   "tailscale",
-			detail: err.Error(),
-			fix:    "run `sudo tailscale up` and authenticate in the browser",
-		}}
-	}
-	out := []check{{name: "tailscale", ok: true, detail: "this machine is " + self}}
-
-	peer, err := resolvePeer(ts, cfg)
-	if err != nil {
-		return self, nil, append(out, check{
-			name:   "peer",
-			detail: err.Error(),
-			fix:    "check the peer name against `tailscale status`, and that the other machine is awake",
-		})
-	}
-	if !peer.Online {
-		return self, nil, append(out, check{
-			name:   "peer",
-			detail: fmt.Sprintf("%s (%s) is offline", peer.Host, peer.IP),
-			fix:    "start the other machine, or check Tailscale is running on it",
-		})
-	}
-
-	path := "relayed through a DERP server"
-	if peer.Direct {
-		path = "direct peer-to-peer"
-	} else {
-		// Worth saying plainly: a peer that has exchanged no traffic yet always
-		// looks relayed, and people read that as a fault.
-		path += " (normal until the link has carried traffic; check again once connected)"
-	}
-	return self, &peer, append(out, check{
-		name:   "peer",
-		ok:     true,
-		detail: fmt.Sprintf("%s (%s) online, %s", peer.Host, peer.IP, path),
-	})
-}
-
-// resolvePeer names the other machine the way the session will.
-func resolvePeer(ts *transport.Tailscale, cfg *config.Config) (transport.Peer, error) {
-	return agent.ResolvePeer(ts, linkPeer, cfg)
-}
-
-func closeQuietly(c io.Closer) { _ = c.Close() }

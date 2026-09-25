@@ -15,19 +15,52 @@ nome `wfkit-link`. As units, o grupo e a config ainda usam o nome `conn`.
 
 ```
 cmd/synk/          o binário: só chama internal/cli
-internal/cli/      os comandos: session, daemon, status
+internal/cli/      os comandos, um arquivo por comando
 internal/agent/    o processo que fica de pé: link, clipboard, áudio
 internal/injector/ o daemon root que abre /dev/uinput
+internal/service/  liga, desliga e lê o estado das units e da tarefa agendada
 internal/          transporte, protocolo, entrada, áudio, clipboard, foco
+pkg/errorx/        os erros com código e dica (snk-NN), no formato do devxx
 infra/             units de systemd, install.sh e install.ps1
 ```
 
+## Comandos
+
+```
+synk <peer>        passa a ligar com essa máquina e reinicia o agente. Aceita o
+                   nome ou o SO: "synk windows" escolhe o único Windows online
+synk ls            as máquinas da tailnet; * marca a atual
+synk status        agente, injetor, peer e ajustes numa tela
+synk doctor        confere tudo de que o link depende e diz como consertar
+synk up | down | restart
+synk logs [-f] [-n 50] [--injector]
+```
+
+Flags globais: `--json` (para scripts), `-q`, `--peer`, `--port`. Os erros
+saem com código, como no devxx:
+
+```
+code: snk-01
+error: more than one macos machine is online (mac, mac-old)
+error_type: user error.
+message: name the one you want: synk mac
+```
+
+`synk agent` e `synk injector` são o que o systemd e a tarefa agendada rodam,
+e ficam fora da ajuda. Os nomes antigos, `session` e `daemon`, continuam
+aceitos para as units já instaladas.
+
+A direção não muda com `synk <peer>`: o Linux continua escutando e o Windows
+continua discando. No Linux o peer é gravado no `conn.yaml`, trocando só a
+linha `peer:`. No Windows, que não lê config de propósito, fica num arquivo
+`peer` com um nome só, em `%APPDATA%\conn\`.
+
 Dois processos no Linux, de propósito:
 
-- **`synk daemon`** (root, unit de sistema) abre `/dev/uinput` e não faz
+- **`synk injector`** (root, unit de sistema) abre `/dev/uinput` e não faz
   mais nada. Sem rede — `PrivateNetwork=yes` —, sem áudio, sem clipboard. Ele
   injeta entrada e nunca lê. O único canal é um socket unix.
-- **`synk session`** (seu usuário, unit de sessão) tem a conexão com o
+- **`synk agent`** (seu usuário, unit de sessão) tem a conexão com o
   peer, o clipboard e o áudio. Para digitar, pede ao daemon pelo socket. Não
   detém privilégio nenhum.
 

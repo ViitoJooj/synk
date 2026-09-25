@@ -38,7 +38,7 @@ func checkDaemon(cfg *config.Config) []check {
 	conn, err := net.DialTimeout("unix", socket, 2*time.Second)
 	if err == nil {
 		closeQuietly(conn)
-		return []check{{name: "daemon", ok: true, detail: "listening on " + socket}}
+		return []check{{name: "injector", ok: true, detail: "listening on " + socket}}
 	}
 
 	// Why the dial failed changes the advice completely, and getting this
@@ -48,7 +48,7 @@ func checkDaemon(cfg *config.Config) []check {
 	switch {
 	case errors.Is(err, os.ErrPermission):
 		return []check{{
-			name:   "daemon",
+			name:   "injector",
 			detail: "running, but this session has no permission to open " + socket,
 			fix: "you are in the conn group but this login session predates it; " +
 				"log out and back in, or run: exec su - $USER",
@@ -56,18 +56,18 @@ func checkDaemon(cfg *config.Config) []check {
 
 	case errors.Is(err, os.ErrNotExist):
 		return []check{{
-			name:   "daemon",
+			name:   "injector",
 			detail: "not running — " + socket + " does not exist",
-			fix:    "sudo systemctl start connd",
+			fix:    "synk up",
 		}}
 
 	default:
 		// A socket that exists but refuses connections means the daemon died
 		// without cleaning up.
 		return []check{{
-			name:   "daemon",
+			name:   "injector",
 			detail: err.Error(),
-			fix:    "check it with: sudo systemctl status connd",
+			fix:    "see why with: synk logs --injector",
 		}}
 	}
 }
@@ -89,7 +89,7 @@ func checkLink(cfg *config.Config, self string, _ *transport.Peer) []check {
 		return []check{{
 			name:   "listening",
 			detail: "nothing is accepting connections on " + addr,
-			fix:    "systemctl --user start conn",
+			fix:    "synk up",
 		}}
 	}
 	closeQuietly(conn)
@@ -128,7 +128,7 @@ func checkPointer() []check {
 			fix: "the cursor will land in the wrong place after crossing; set a flat profile with:\n" +
 				"    kwriteconfig6 --file kcminputrc --group Libinput --group 7531 --group 1 " +
 				"--group conn --key PointerAccelerationProfile 1\n" +
-				"    then restart the daemon: sudo systemctl restart connd",
+				"    then restart the injector: sudo systemctl restart connd",
 		}}
 	}
 	return []check{{name: "pointer", ok: true, detail: "flat profile; injected motion is 1:1"}}

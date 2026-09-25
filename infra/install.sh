@@ -74,7 +74,7 @@ systemctl --user enable --now conn.service
 
 say "Checking"
 sudo systemctl --no-pager --lines=0 status connd.service || true
-/usr/local/bin/synk status || true
+/usr/local/bin/synk doctor || true
 
 cat <<'EOF'
 

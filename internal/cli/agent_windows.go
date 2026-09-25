@@ -2,9 +2,9 @@
 
 package cli
 
-const sessionShort = "Capture this machine's keyboard and mouse and drive the peer with them"
+const agentShort = "Capture this machine's keyboard and mouse and drive the peer with them"
 
-const sessionLong = `Run the sending half of synk.
+const agentLong = `Run the sending half of synk: the agent.
 
 This machine owns the physical keyboard and mouse. While the pointer is on this
 screen nothing changes; when it reaches the border the peer sits beyond, input
@@ -18,6 +18,6 @@ Ctrl+Alt+F12 always returns control to this machine, whatever state the link is
 in.`
 
 func init() {
-	sessionCmd.Flags().BoolVar(&sessionVerbose, "verbose", false,
+	agentCmd.Flags().BoolVar(&agentVerbose, "verbose", false,
 		"report captured-event counters, to tell a dead hook from a quiet link")
 }

@@ -47,7 +47,7 @@ func TestDaemonCheckReportsAMissingSocketAsNotRunning(t *testing.T) {
 	if got.ok {
 		t.Fatal("ok = true, want false")
 	}
-	if !strings.Contains(got.fix, "systemctl") {
+	if !strings.Contains(got.fix, "synk up") {
 		t.Errorf("fix = %q, want it to suggest starting the service", got.fix)
 	}
 }

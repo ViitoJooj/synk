@@ -2,12 +2,12 @@
 
 package cli
 
-const sessionShort = "Accept the peer's connection and apply its input locally"
+const agentShort = "Accept the peer's connection and apply its input locally"
 
-const sessionLong = `Run the unprivileged half of synk.
+const agentLong = `Run the unprivileged half of synk: the agent.
 
 This process owns the network connection, the clipboard and the screen
-geometry. It holds no privilege of its own: to type, it asks the daemon over a
+geometry. It holds no privilege of its own: to type, it asks the injector over a
 unix socket.
 
 This machine listens and the peer dials in. That direction is deliberate: an

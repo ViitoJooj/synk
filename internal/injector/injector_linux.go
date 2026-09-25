@@ -46,6 +46,6 @@ func Run(ctx context.Context, socket string, out io.Writer) error {
 	}
 	defer srv.Close()
 
-	fmt.Fprintf(out, "synk daemon ready on %s\n", socket)
+	fmt.Fprintf(out, "synk injector ready on %s\n", socket)
 	return srv.Serve(ctx)
 }

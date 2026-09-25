@@ -63,9 +63,9 @@ func dialAdvice(err error) string {
 	var timeout interface{ Timeout() bool }
 	if errors.As(err, &timeout) && timeout.Timeout() {
 		return "the peer is reachable but did not answer in time; " +
-			"check that `synk session` is running there, and that nothing is filtering the port"
+			"check that `synk status` shows the agent running there, and that nothing is filtering the port"
 	}
-	return "start `synk session` on the other machine (`systemctl --user start conn` on Linux)"
+	return "run `synk up` on the other machine"
 }
 
 // checkPointer has no counterpart here: this machine's pointer is its own, and
