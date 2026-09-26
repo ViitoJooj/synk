@@ -267,7 +267,11 @@ func runFolderShow(cmd *cobra.Command, args []string) error {
 		fmt.Fprintf(out, "  comes from the peer  %d files (%s)\n", pv.Fetch, size(pv.FetchBytes))
 		fmt.Fprintf(out, "  goes to the peer     %d files (%s)\n", pv.Send, size(pv.SendBytes))
 		fmt.Fprintf(out, "  deleted              nothing\n")
-		list(out, "On both sides with different content, kept in both versions", pv.Conflicts, 20)
+		if len(pv.Conflicts) > 0 {
+			list(out, "On both sides with different content, kept in both versions", pv.Conflicts, 20)
+		} else {
+			fmt.Fprintf(out, "  conflicts            none\n")
+		}
 	}
 	if len(f.Divergent) > 0 {
 		list(out, "Git repositories that differ on both sides, held", f.Divergent, 0)
