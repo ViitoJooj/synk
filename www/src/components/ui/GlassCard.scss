@@ -1,0 +1,8 @@
+@use "../../styles/variables" as *;
+@use "../../styles/mixins" as *;
+
+.sk-card {
+    @include glass-panel;
+    border-radius: $radius-lg;
+    padding: $card-padding;
+}

@@ -1,0 +1,178 @@
+{
+    "nav": {
+        "overview": "Visão geral",
+        "peers": "Máquinas",
+        "folders": "Pastas",
+        "settings": "Ajustes",
+        "logs": "Logs"
+    },
+    "agent": {
+        "down": "O agente não está rodando",
+        "downHint": "A interface mostra o que o agente diz; sem ele não há link nem sincronização.",
+        "start": "Iniciar agente",
+        "stopped": "agente parado"
+    },
+    "role": {
+        "listener": "Esta máquina recebe o teclado e o mouse do peer",
+        "dialer": "Esta máquina compartilha o próprio teclado e mouse com o peer"
+    },
+    "link": {
+        "title": "Link",
+        "up": "conectado",
+        "waiting": "esperando",
+        "starting": "iniciando",
+        "connected": "conectado",
+        "peer": "Máquina",
+        "anyone": "o único computador online",
+        "for": "Há",
+        "keyboard": "Teclado",
+        "focus": {
+            "local": "nesta máquina",
+            "peer": "no peer"
+        },
+        "audio": "Áudio",
+        "audioState": {
+            "off": "desligado",
+            "waiting": "esperando o outro lado",
+            "flowing": "tocando"
+        },
+        "clipboard": "Área de transferência",
+        "lastDrop": "Última queda",
+        "change": "Trocar máquina"
+    },
+    "common": {
+        "on": "ligada",
+        "off": "desligada",
+        "refresh": "Atualizar",
+        "cancel": "Cancelar",
+        "save": "Salvar"
+    },
+    "phase": {
+        "waiting": "esperando",
+        "preview": "revisar",
+        "syncing": "sincronizando",
+        "idle": "em dia",
+        "paused": "pausada",
+        "missing": "sumiu",
+        "scanning": "lendo"
+    },
+    "peers": {
+        "subtitle": "As máquinas da sua tailnet. O link vai para a marcada.",
+        "none": "Nenhuma máquina na tailnet.",
+        "direct": "direto",
+        "relayed": "via relay",
+        "noSynk": "sem synk",
+        "online": "online",
+        "offline": "offline",
+        "current": "atual",
+        "connect": "Conectar"
+    },
+    "folders": {
+        "subtitle": "Pastas iguais nas duas máquinas, pareadas pelo nome.",
+        "tab": {
+            "folders": "Pastas",
+            "blocks": "Bloqueios",
+            "trash": "Lixeira"
+        },
+        "none": "Nenhuma pasta ainda.",
+        "manage": "Gerenciar pastas",
+        "offeredShort": "O outro lado oferece {n} pasta(s) que esta máquina não tem.",
+        "offered": "O outro lado sincroniza \"{name}\"",
+        "offeredHint": "Escolha onde ela fica nesta máquina; o nome precisa ser o mesmo dos dois lados.",
+        "pickFor": "Escolher pasta para {name}",
+        "peerAway": "O peer não está conectado: as pastas esperam por ele.",
+        "synced": "Sincronizadas",
+        "add": "Adicionar pasta",
+        "files": "arquivos",
+        "review": "Revisar",
+        "checkDeletes": "Conferir deleções",
+        "resume": "Retomar",
+        "pause": "Pausar",
+        "remove": "Parar de sincronizar",
+        "removeTitle": "Parar de sincronizar \"{name}\"?",
+        "removeBody": "Nenhum arquivo é tocado, dos dois lados. A pasta só sai da sincronização.",
+        "deletesTitle": "Deleções em massa em \"{name}\"",
+        "deletesBody": "Se estas deleções são as que você quis, confirme. Elas vão para a lixeira, como toda deleção.",
+        "acceptDeletes": "Confirmar deleções",
+        "previewShort": "primeira sync: {in} chegam, {out} vão, {conflicts} conflito(s)",
+        "pending": "{n} arquivo(s) a caminho",
+        "inSyncFor": "em dia há {t}",
+        "addTitle": "Adicionar pasta",
+        "nameLabel": "Nome",
+        "nameHint": "É o nome que liga esta pasta à do outro lado. Use o mesmo nas duas máquinas.",
+        "reviewTitle": "Primeira sincronização de \"{name}\"",
+        "accept": "Aceitar",
+        "comes": "Chegam do outro lado",
+        "goes": "Vão para o outro lado",
+        "deleted": "Apagados",
+        "nothing": "nada",
+        "noPreview": "A prévia aparece quando o outro lado também tiver a pasta.",
+        "conflicts": "{n} arquivo(s) nos dois lados com conteúdo diferente",
+        "conflictsHint": "Ficam as duas versões: a mais recente com o nome original, a outra com o nome da máquina.",
+        "divergent": "{n} repositório(s) git diferente(s) nos dois lados",
+        "divergentHint": "Juntar arquivo por arquivo quebraria o repo. Escolha um lado para cada um, e o oposto na outra máquina; o que perde vai para a lixeira.",
+        "hold": "deixar parado",
+        "keepHere": "manter o desta máquina",
+        "takePeer": "usar o do outro lado",
+        "oneFile": "1 arquivo",
+        "nFiles": "{n} arquivos"
+    },
+    "blocks": {
+        "title": "Bloqueios",
+        "hint": "Nada bloqueado sai daqui nem entra do outro lado. Sem barra, casa com o nome em qualquer lugar (node_modules, *.env); um caminho começa com ~ ou /.",
+        "placeholder": "*.env, node_modules ou ~/pasta",
+        "add": "Bloquear",
+        "origin": {
+            "yours": "seu",
+            "default": "padrão (build)"
+        },
+        "builtIn": "De fábrica",
+        "builtInHint": "Chaves, chaveiros, perfis de navegador, o sistema e o lixo dos sistemas. Não saem."
+    },
+    "trash": {
+        "title": "Lixeira",
+        "hint": "Tudo o que a sincronização apagou ou sobrescreveu, guardado por 30 dias.",
+        "empty": "A lixeira está vazia.",
+        "ago": "há {t}",
+        "restore": "Restaurar",
+        "takenTitle": "Já existe um arquivo no lugar",
+        "takenBody": "{path} existe agora. Restaurar mesmo assim manda o atual para a lixeira.",
+        "restoreAnyway": "Restaurar mesmo assim"
+    },
+    "settings": {
+        "subtitle": "Os ajustes desta máquina. Valem na hora.",
+        "link": "Link",
+        "app": "Aplicativo",
+        "language": "Idioma",
+        "peerHint": "Troque em Máquinas.",
+        "edgeHint": "A borda desta tela além da qual fica a tela do peer.",
+        "portHint": "O link usa esta porta; a sincronização, a seguinte.",
+        "key": {
+            "peer": "Máquina",
+            "edge": "Borda",
+            "port": "Porta",
+            "clipboard": "Área de transferência",
+            "audio": {
+                "playback": "Som no peer",
+                "mic": "Microfone do peer"
+            }
+        },
+        "edge": {
+            "left": "esquerda",
+            "right": "direita",
+            "top": "em cima",
+            "bottom": "embaixo"
+        },
+        "help": {
+            "clipboard": "O que você copia de um lado cola no outro.",
+            "audio": {
+                "playback": "O som desta máquina sai nas caixas do peer, e as daqui ficam mudas.",
+                "mic": "Ainda não implementado: o microfone do peer como entrada aqui."
+            }
+        }
+    },
+    "logs": {
+        "subtitle": "As últimas linhas do agente, ao vivo.",
+        "empty": "Nada ainda."
+    }
+}

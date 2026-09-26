@@ -1,0 +1,30 @@
+@use "../../styles/variables" as *;
+
+.sk-notice {
+    display: flex;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: $radius-md;
+    font-size: 13px;
+    line-height: 1.45;
+
+    svg {
+        flex-shrink: 0;
+        margin-top: 2px;
+    }
+
+    p {
+        margin-top: 2px;
+    }
+
+    @each $tone in failed, pending, progress {
+        &--#{$tone} {
+            color: var(--color-#{$tone});
+            background: var(--color-#{$tone}-bg);
+
+            strong {
+                color: var(--color-text);
+            }
+        }
+    }
+}

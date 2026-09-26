@@ -1,0 +1,41 @@
+@use "../../styles/variables" as *;
+@use "../../styles/mixins" as *;
+
+.sk-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: grid;
+    place-items: center;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(4px);
+
+    &__panel {
+        @include glass-panel(32px);
+        background: rgba(22, 22, 24, 0.92);
+        border-radius: $radius-lg;
+        padding: $card-padding;
+        width: min(460px, calc(100vw - 48px));
+        max-height: calc(100vh - 64px);
+        display: flex;
+        flex-direction: column;
+
+        &--wide {
+            width: min(640px, calc(100vw - 48px));
+        }
+    }
+
+    &__body {
+        overflow: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    &__footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 20px;
+    }
+}

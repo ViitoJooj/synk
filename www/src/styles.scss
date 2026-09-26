@@ -1,0 +1,65 @@
+@use "./styles/variables" as *;
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 14px;
+    color: var(--color-text);
+    background:
+        radial-gradient(1200px 600px at 10% -10%, rgba(120, 130, 160, 0.16), transparent 60%),
+        radial-gradient(900px 500px at 110% 110%, rgba(90, 100, 130, 0.14), transparent 60%),
+        var(--color-bg);
+    -webkit-font-smoothing: antialiased;
+    user-select: none;
+}
+
+code,
+.mono {
+    font-family: "JetBrains Mono", ui-monospace, "Cascadia Code", monospace;
+    font-size: 12px;
+    user-select: text;
+}
+
+h1 {
+    font-size: 28px;
+    font-weight: 700;
+    margin: 0 0 4px;
+    letter-spacing: -0.02em;
+}
+
+h2 {
+    font-size: 15px;
+    font-weight: 600;
+    margin: 0 0 12px;
+}
+
+p {
+    margin: 0;
+}
+
+.dim {
+    color: var(--color-text-dim);
+}
+
+.faint {
+    color: var(--color-text-faint);
+}
+
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--color-glass-strong);
+    border-radius: $radius-pill;
+    border: 3px solid transparent;
+    background-clip: padding-box;
+}

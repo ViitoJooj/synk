@@ -26,6 +26,9 @@ internal/sync/     a sincronização de pastas: index (varredura), plan (as
                    decisões, função pura), trash, folders (lista e bloqueios),
                    engine (sessão, protocolo, aplicação)
 pkg/errorx/        os erros com código e dica (snk-NN), no formato do devxx
+www/               a janela: Tauri 2 + React + Vite + TS + SCSS
+www/src-tauri/     o Rust, fino: repassa a API de controle e cuida da bandeja
+makefile           build, test, vet, ui-dev, ui-build, install
 infra/linux/       as units de systemd
 infra/windows/     install.ps1
 hacks/install.sh   instala no Linux e migra os nomes antigos
@@ -287,8 +290,41 @@ coordenar mais nada. O estado acordado fica em `~/.local/state/synk`; se ele se
 corromper, a próxima rodada é tratada como primeira sincronização, que não
 apaga nada.
 
+## A janela
+
+`www/` é um app Tauri com cinco telas: visão geral do link, as máquinas da
+tailnet, as pastas (com a prévia da primeira sincronização, os bloqueios e a
+lixeira), os ajustes e os logs do agente, ao vivo. Fechar a janela a esconde na
+bandeja; o ícone mostra o estado do link e a reabre.
+
+Ela não decide nada: cada tela é a API de controle do agente, repassada pelo
+Rust como JSON, e o que vale é o que o agente diz. Sem o agente rodando, a
+janela diz isso e oferece iniciá-lo.
+
+**Linux**
+
+```bash
+make ui-build        # gera www/src-tauri/target/release/bundle/deb/synk_*.deb
+sudo dpkg -i www/src-tauri/target/release/bundle/deb/synk_*.deb
+synk-ui              # ou pelo menu de aplicativos, como "synk"
+```
+
+O binário da janela se chama `synk-ui` de propósito: `synk` é a linha de
+comando.
+
+**Windows**: o instalador é gerado no próprio Windows, porque compilar Tauri
+para Windows a partir do Linux é frágil. Com Rust e Node instalados:
+
+```powershell
+cd www
+npm install
+npx tauri build --bundles nsis
+# o instalador fica em src-tauri\target\release\bundle\nsis\
+```
+
 ## O que ainda não existe
 
-- **Direção do microfone** (Windows → fonte virtual do PipeWire).
+- **Direção do microfone** (Windows → fonte virtual do PipeWire). A janela
+  mostra o ajuste desligado e diz que falta.
 - **WASAPI e a janela de ocultar ponteiro no Windows compilam e passam no vet,
   mas nunca foram executados.** Trate como não comprovado.

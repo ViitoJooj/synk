@@ -1,0 +1,19 @@
+[package]
+name = "synk-ui"
+version = "0.1.0"
+description = "synk's window: link, peers, folders and settings, over the agent's control API"
+authors = ["ViitoJooj"]
+edition = "2021"
+
+[lib]
+name = "synk_ui_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-dialog = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"

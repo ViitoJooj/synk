@@ -1,0 +1,178 @@
+{
+    "nav": {
+        "overview": "Overview",
+        "peers": "Machines",
+        "folders": "Folders",
+        "settings": "Settings",
+        "logs": "Logs"
+    },
+    "agent": {
+        "down": "The agent is not running",
+        "downHint": "This window shows what the agent reports; without it there is no link and no sync.",
+        "start": "Start the agent",
+        "stopped": "agent stopped"
+    },
+    "role": {
+        "listener": "This machine receives the peer's keyboard and mouse",
+        "dialer": "This machine shares its keyboard and mouse with the peer"
+    },
+    "link": {
+        "title": "Link",
+        "up": "connected",
+        "waiting": "waiting",
+        "starting": "starting",
+        "connected": "connected",
+        "peer": "Machine",
+        "anyone": "the only computer online",
+        "for": "For",
+        "keyboard": "Keyboard",
+        "focus": {
+            "local": "on this machine",
+            "peer": "on the peer"
+        },
+        "audio": "Audio",
+        "audioState": {
+            "off": "off",
+            "waiting": "waiting for the other side",
+            "flowing": "playing"
+        },
+        "clipboard": "Clipboard",
+        "lastDrop": "Last drop",
+        "change": "Change machine"
+    },
+    "common": {
+        "on": "on",
+        "off": "off",
+        "refresh": "Refresh",
+        "cancel": "Cancel",
+        "save": "Save"
+    },
+    "phase": {
+        "waiting": "waiting",
+        "preview": "review",
+        "syncing": "syncing",
+        "idle": "in sync",
+        "paused": "paused",
+        "missing": "missing",
+        "scanning": "reading"
+    },
+    "peers": {
+        "subtitle": "The machines on your tailnet. The link goes to the marked one.",
+        "none": "No machines on the tailnet.",
+        "direct": "direct",
+        "relayed": "relayed",
+        "noSynk": "no synk",
+        "online": "online",
+        "offline": "offline",
+        "current": "current",
+        "connect": "Connect"
+    },
+    "folders": {
+        "subtitle": "Folders kept the same on both machines, paired by name.",
+        "tab": {
+            "folders": "Folders",
+            "blocks": "Blocks",
+            "trash": "Trash"
+        },
+        "none": "No folders yet.",
+        "manage": "Manage folders",
+        "offeredShort": "The other side offers {n} folder(s) this machine lacks.",
+        "offered": "The other side syncs \"{name}\"",
+        "offeredHint": "Pick where it lives on this machine; the name must match on both sides.",
+        "pickFor": "Pick a folder for {name}",
+        "peerAway": "The peer is not connected: folders wait for it.",
+        "synced": "Synced",
+        "add": "Add folder",
+        "files": "files",
+        "review": "Review",
+        "checkDeletes": "Check deletions",
+        "resume": "Resume",
+        "pause": "Pause",
+        "remove": "Stop syncing",
+        "removeTitle": "Stop syncing \"{name}\"?",
+        "removeBody": "No file is touched on either side. The folder just leaves the sync.",
+        "deletesTitle": "Mass deletion in \"{name}\"",
+        "deletesBody": "If these deletions are the ones you meant, confirm. They go to the trash, as every deletion does.",
+        "acceptDeletes": "Confirm deletions",
+        "previewShort": "first sync: {in} in, {out} out, {conflicts} conflict(s)",
+        "pending": "{n} file(s) on the way",
+        "inSyncFor": "in sync for {t}",
+        "addTitle": "Add folder",
+        "nameLabel": "Name",
+        "nameHint": "The name pairs this folder with the other side's. Use the same on both machines.",
+        "reviewTitle": "First sync of \"{name}\"",
+        "accept": "Accept",
+        "comes": "Comes from the other side",
+        "goes": "Goes to the other side",
+        "deleted": "Deleted",
+        "nothing": "nothing",
+        "noPreview": "The preview appears once the other side has the folder too.",
+        "conflicts": "{n} file(s) on both sides with different content",
+        "conflictsHint": "Both versions stay: the newer under the original name, the other named after its machine.",
+        "divergent": "{n} git repositor(ies) that differ on both sides",
+        "divergentHint": "Merging file by file would break a repository. Pick a side for each, and the opposite on the other machine; what loses goes to the trash.",
+        "hold": "leave it held",
+        "keepHere": "keep this machine's",
+        "takePeer": "take the other side's",
+        "oneFile": "1 file",
+        "nFiles": "{n} files"
+    },
+    "blocks": {
+        "title": "Blocks",
+        "hint": "Nothing blocked leaves here or comes in from the other side. Without a slash it matches the name anywhere (node_modules, *.env); a path starts with ~ or /.",
+        "placeholder": "*.env, node_modules or ~/folder",
+        "add": "Block",
+        "origin": {
+            "yours": "yours",
+            "default": "default (build)"
+        },
+        "builtIn": "Built in",
+        "builtInHint": "Keys, keyrings, browser profiles, the system and system junk. They stay."
+    },
+    "trash": {
+        "title": "Trash",
+        "hint": "Everything the sync deleted or overwrote, kept for 30 days.",
+        "empty": "The trash is empty.",
+        "ago": "{t} ago",
+        "restore": "Restore",
+        "takenTitle": "A file is there already",
+        "takenBody": "{path} exists now. Restoring anyway sends the current one to the trash.",
+        "restoreAnyway": "Restore anyway"
+    },
+    "settings": {
+        "subtitle": "This machine's settings. They apply at once.",
+        "link": "Link",
+        "app": "App",
+        "language": "Language",
+        "peerHint": "Change it in Machines.",
+        "edgeHint": "The border of this screen the peer's screen sits beyond.",
+        "portHint": "The link uses this port; folder sync the next one.",
+        "key": {
+            "peer": "Machine",
+            "edge": "Edge",
+            "port": "Port",
+            "clipboard": "Clipboard",
+            "audio": {
+                "playback": "Sound on the peer",
+                "mic": "The peer's microphone"
+            }
+        },
+        "edge": {
+            "left": "left",
+            "right": "right",
+            "top": "top",
+            "bottom": "bottom"
+        },
+        "help": {
+            "clipboard": "What you copy on one side pastes on the other.",
+            "audio": {
+                "playback": "This machine's sound plays on the peer's speakers, and these stay muted.",
+                "mic": "Not built yet: the peer's microphone as an input here."
+            }
+        }
+    },
+    "logs": {
+        "subtitle": "The agent's latest lines, live.",
+        "empty": "Nothing yet."
+    }
+}

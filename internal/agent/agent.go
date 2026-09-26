@@ -51,7 +51,10 @@ type Options struct {
 // Failing to open the control socket is reported and survived. The link is
 // what the agent is for; the API is how it is watched.
 func Run(ctx context.Context, opts Options) error {
-	a := &runner{opts: opts, st: newState(role), ts: transport.NewTailscale()}
+	// Everything the agent says also goes to a ring the "logs" verb reads.
+	ring := newLogRing(500)
+	opts.Out = io.MultiWriter(opts.Out, ring)
+	a := &runner{opts: opts, st: newState(role), ts: transport.NewTailscale(), logs: ring}
 
 	if l, err := control.Listen(control.Address()); err != nil {
 		fmt.Fprintf(opts.Out, "control API off: %v\n", err)
@@ -138,7 +141,8 @@ var startLink = runLink
 type runner struct {
 	st  *state
 	ts  *transport.Tailscale
-	eng *engine.Engine // nil when folder sync could not start
+	eng  *engine.Engine // nil when folder sync could not start
+	logs *logRing
 
 	mu         sync.Mutex
 	opts       Options
@@ -159,6 +163,7 @@ func (a *runner) reload() error {
 			return err
 		}
 		next.Reload = a.opts.Reload
+		next.Out = a.opts.Out // keep writing to the ring
 		a.opts = next
 	}
 	a.reloading = true

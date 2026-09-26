@@ -45,6 +45,16 @@ func (a *runner) server() *control.Server {
 		return InfoOf(peer, peer.Host), nil
 	})
 
+	s.Handle("logs", func(_ context.Context, raw json.RawMessage) (any, error) {
+		var args struct {
+			Lines int `json:"lines"`
+		}
+		if err := decode(raw, &args); err != nil {
+			return nil, err
+		}
+		return a.logs.Last(args.Lines), nil
+	})
+
 	s.Handle("reload", func(context.Context, json.RawMessage) (any, error) {
 		if err := a.reload(); err != nil {
 			return nil, errorx.Failed("reload the settings", err)
