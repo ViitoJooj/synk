@@ -58,6 +58,7 @@ func runDoctor(cmd *cobra.Command, _ []string) error {
 	checks = append(checks, checkDaemon(cfg)...)
 	checks = append(checks, checkPointer()...)
 	checks = append(checks, checkLink(cfg, self, peer)...)
+	checks = append(checks, checkSync(cfg, self, peer)...)
 
 	out := cmd.OutOrStdout()
 	if asJSON {

@@ -167,3 +167,18 @@ func BadSetting(err error) *Error {
 		Err:  err,
 	}
 }
+
+// Folder explains a refused change to the folders or blocks. The hint depends
+// on what was refused, which err says through the folders package's errors.
+func Folder(action, hint string, err error) *Error {
+	return &Error{Code: "snk-13", Msg: "cannot " + action, Kind: User, Hint: hint, Err: err}
+}
+
+func NotSyncing() *Error {
+	return &Error{
+		Code: "snk-14",
+		Msg:  "the agent is not running, so there is no sync status to show",
+		Kind: Environment,
+		Hint: "start it with 'synk up'; the folder list itself is in 'synk folder ls --offline'",
+	}
+}

@@ -1,8 +1,9 @@
 # synk
 
 Compartilha mouse, teclado, área de transferência e áudio entre uma máquina
-Linux e um PC Windows na mesma tailnet. O ponteiro atravessa a borda da tela e
-o teclado vai junto; não há agente na nuvem e não há servidor no meio.
+Linux e um PC Windows na mesma tailnet, e mantém pastas iguais nas duas. O
+ponteiro atravessa a borda da tela e o teclado vai junto; não há agente na
+nuvem e não há servidor no meio.
 
 Extraído de [wfkit](https://github.com/ViitoJooj/wfkit) em 2026-09-05, onde
 vivia como subcomando do CLI. Virou projeto próprio porque é um app de duas
@@ -21,6 +22,9 @@ internal/injector/ o daemon root que abre /dev/uinput
 internal/service/  liga, desliga e lê o estado das units e da tarefa agendada
 internal/          transporte, protocolo, entrada, áudio, clipboard, foco
 internal/control/  a API local: socket unix / named pipe, JSON por linha
+internal/sync/     a sincronização de pastas: index (varredura), plan (as
+                   decisões, função pura), trash, folders (lista e bloqueios),
+                   engine (sessão, protocolo, aplicação)
 pkg/errorx/        os erros com código e dica (snk-NN), no formato do devxx
 infra/linux/       as units de systemd
 infra/windows/     install.ps1
@@ -38,6 +42,12 @@ synk doctor        confere tudo de que o link depende e diz como consertar
 synk up | down | restart
 synk logs [-f] [-n 50] [--injector]
 synk config ls | get <chave> | set <chave> <valor>
+
+synk folder add <caminho> [--as nome] | ls | show <nome> | rm <nome>
+synk folder accept <nome> [--keep-here repo] [--take-peer repo]
+synk folder pause | resume <nome> [--accept-deletes]
+synk block <caminho|padrão> | block ls | unblock <caminho|padrão>
+synk trash ls [pasta] | trash restore <id> [--force]
 ```
 
 Flags globais: `--json` (para scripts), `-q`, `--peer`, `--port`. Os erros
@@ -190,6 +200,88 @@ a um processo não elevado. Se isso incomodar, `-Elevated`.
 
 Não é preciso esperar o Tailscale subir antes: o binário consulta o backend e o
 estado do peer, recua de 1s a 30s e só escreve no log quando o motivo muda.
+
+## Sincronização de pastas
+
+Mantém pastas iguais nas duas máquinas: salvou no PC, em alguns segundos está
+no notebook, e o contrário. Roda dentro do agente, numa conexão própria na
+porta seguinte à do link (27432), na mesma direção dele (o Linux escuta, o
+Windows disca) e autenticada do mesmo jeito, pelo IP da tailnet.
+
+**Uma pasta é pareada pelo nome**, não pelo caminho:
+`synk folder add ~/Documentos/codes --as codes` num lado e o mesmo nome no
+outro, onde quer que cada um guarde. A lista fica em `folders.yaml`, ao lado da
+config, nas duas máquinas.
+
+### O que nunca acontece
+
+- **Nada é apagado de verdade.** O que a sync apaga ou sobrescreve vai antes
+  para a lixeira (`~/.local/share/synk/trash`, `%LOCALAPPDATA%\synk\trash`),
+  fora de toda pasta sincronizada, por 30 dias. `synk trash restore` devolve.
+  Substituir um arquivo nunca deixa o caminho vazio: a versão velha é ligada
+  na lixeira e a nova renomeada por cima.
+- **A primeira sincronização não escreve nada antes de você aceitar**, em cada
+  lado. `synk folder show` mostra o que vem, o que vai e o que existe nos dois
+  com conteúdo diferente. Aceita, ela não apaga nada e não sobrescreve nada: o
+  que difere fica nas duas versões, a mais recente com o nome original e a
+  outra como `README (samsung-book).md`.
+- **Uma deleção só passa se o arquivo apagado era a versão que os dois lados
+  tinham combinado** (o hash do estado acordado). Se o outro lado editou nesse
+  meio-tempo, a edição vence e o arquivo volta.
+- **Trava de deleção em massa:** mais de 50 arquivos, ou mais de 25% da pasta,
+  somados no último minuto, e a pasta pausa esperando
+  `synk folder resume --accept-deletes`. Somado por minuto porque um `rm -rf`
+  pego pela metade chega em duas rodadas, e cada metade sozinha passaria.
+- **Pasta que sumiu** (disco desmontado, renomeada) pausa. Ela nunca é criada
+  vazia no lugar, que é como o synk antigo transformava um disco desmontado
+  em "apagar tudo" do outro lado.
+- **Arquivo que não dá para ler** (travado por um programa no Windows) fica
+  retido, nunca some do índice: sumir seria lido como apagado.
+- **O peer só lê o que este lado indexou**, com o hash que o índice registrou.
+  Pedido de caminho fora da pasta, bloqueado ou de outra versão é recusado sem
+  mandar um byte. Caminhos que chegam são conferidos (`..`, absoluto, nomes
+  que o Windows não aceita) e nenhuma escrita atravessa link simbólico.
+
+### Conflitos, git e o `+x`
+
+- **Os dois editaram o mesmo arquivo** antes de sincronizar: fica a versão mais
+  recente; a outra vai para a lixeira de quem a tinha.
+- **Repositórios git vão inteiros, `.git` junto**, para commits e branches
+  chegarem ao outro lado. Enquanto o git trabalha num repo (existe um `*.lock`
+  no `.git`), aquele repo inteiro fica retido nos dois lados e não sai pela
+  metade.
+- **Um repo que existe nos dois lados com conteúdo diferente** fica retido na
+  primeira sincronização, porque juntá-lo arquivo por arquivo o quebraria.
+  Alinhe com `git push/pull`, ou escolha um lado no aceite:
+  `synk folder accept codes --take-peer proj`.
+- **Use uma máquina por vez em cada repo.** Rodar git no mesmo repo nos dois
+  lados dentro dos segundos da sincronização é o único jeito de dar problema.
+- No Windows, `core.autocrlf=true` reescreve arquivos a cada checkout e vira
+  uma enxurrada de "edições"; o `synk doctor` avisa.
+- O Windows não tem bit de executável. Um script editado lá volta ao Linux com
+  o `+x` que tinha.
+
+### Bloqueios
+
+`synk block` tira algo da sincronização **nos dois sentidos**: nada ali sai
+daqui e nada que chega é escrito ali. Um padrão sem barra casa com um nome em
+qualquer lugar (`node_modules`, `*.env`); um caminho começa com `.`, `~` ou `/`.
+Bloquear não apaga nada. Vêm bloqueados de fábrica, e podem sair com
+`synk unblock`, os diretórios de build (`node_modules`, `target`, `bin`, `obj`,
+`.venv`, `venv`, `__pycache__`, `dist`). Não saem nunca: o lixo dos sistemas
+(`Thumbs.db`, `desktop.ini`, `~$*`...) e os caminhos que nenhuma pasta pode
+ser nem conter: `~/.ssh`, `~/.gnupg`, chaveiros, perfis de navegador, a config
+e o estado do synk, a home inteira, `/`, `C:\Windows`, `Program Files`.
+
+### Como decide
+
+Cada lado varre suas pastas a cada 5 s (o hash só é refeito quando tamanho ou
+data mudam), troca o índice com o outro e roda a mesma função pura
+(`internal/sync/plan`) sobre três visões: a sua, a do outro e a última em que
+os dois concordaram. Cada lado só muda a própria cópia, e os dois convergem sem
+coordenar mais nada. O estado acordado fica em `~/.local/state/synk`; se ele se
+corromper, a próxima rodada é tratada como primeira sincronização, que não
+apaga nada.
 
 ## O que ainda não existe
 

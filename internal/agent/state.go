@@ -2,8 +2,11 @@ package agent
 
 import (
 	"os"
+	"reflect"
 	"sync"
 	"time"
+
+	"github.com/ViitoJooj/synk/internal/sync/engine"
 )
 
 // Status is what the agent says about itself over the control API: to
@@ -15,6 +18,8 @@ type Status struct {
 	// "dialer" on Windows, which dials.
 	Role string `json:"role"`
 	Link Link   `json:"link"`
+	// Sync is the folder sync, when it runs.
+	Sync *engine.Status `json:"sync,omitempty"`
 }
 
 // Link is the connection to the peer.
@@ -111,6 +116,27 @@ func (s *state) update(f func(*Link)) {
 		}
 	}
 	s.mu.Unlock()
+}
+
+// setSync records the folder sync's status and wakes subscribers only if it
+// changed: the engine reports after every scan, every few seconds, and a UI
+// should not redraw for nothing.
+func (s *state) setSync(st engine.Status) {
+	if s == nil {
+		return
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.st.Sync != nil && reflect.DeepEqual(*s.st.Sync, st) {
+		return
+	}
+	s.st.Sync = &st
+	for ch := range s.subs {
+		select {
+		case ch <- struct{}{}:
+		default:
+		}
+	}
 }
 
 func (s *state) waiting(peer string) {

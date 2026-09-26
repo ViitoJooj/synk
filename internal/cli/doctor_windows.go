@@ -5,6 +5,8 @@ package cli
 import (
 	"errors"
 	"fmt"
+	"os/exec"
+	"strings"
 
 	"github.com/ViitoJooj/synk/internal/agent"
 	"github.com/ViitoJooj/synk/internal/config"
@@ -71,3 +73,41 @@ func dialAdvice(err error) string {
 // checkPointer has no counterpart here: this machine's pointer is its own, and
 // nothing injects motion into it.
 func checkPointer() []check { return nil }
+
+// checkSync dials the peer's folder-sync port, the one after the link's, and
+// checks git's line endings here.
+func checkSync(cfg *config.Config, _ string, peer *transport.Peer) []check {
+	out := checkLineEndings()
+	if peer == nil {
+		return out
+	}
+	port := agent.Port(linkPort, cfg) + 1
+	conn, err := transport.Dial(peer.IP, port)
+	if err != nil {
+		return append(out, check{
+			name:   "folder sync",
+			detail: fmt.Sprintf("cannot reach %s:%d: %v", peer.IP, port, err),
+			fix:    "check 'synk doctor' on the other machine",
+		})
+	}
+	closeQuietly(conn)
+	return append(out, check{name: "folder sync", ok: true, detail: fmt.Sprintf("%s:%d answered", peer.IP, port)})
+}
+
+// checkLineEndings warns about core.autocrlf. With it on, git on Windows
+// rewrites text files with CRLF on every checkout; synced to Linux, each
+// checkout here becomes an "edit" of hundreds of files, and back.
+func checkLineEndings() []check {
+	out, err := exec.Command("git", "config", "--global", "core.autocrlf").Output()
+	if err != nil {
+		return nil // no git, or the setting is unset: nothing rewrites
+	}
+	if v := strings.TrimSpace(string(out)); v == "true" {
+		return []check{{
+			name:   "line endings",
+			detail: "git has core.autocrlf=true, which rewrites synced files on every checkout",
+			fix:    "git config --global core.autocrlf false  (or set line endings per repository in .gitattributes)",
+		}}
+	}
+	return []check{{name: "line endings", ok: true, detail: "git leaves line endings alone"}}
+}

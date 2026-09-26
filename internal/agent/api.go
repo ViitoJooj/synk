@@ -10,7 +10,8 @@ import (
 	"github.com/ViitoJooj/synk/pkg/errorx"
 )
 
-// The verbs the control API answers. folders.* arrive with folder sync.
+// The verbs the control API answers; folders.*, blocks.* and trash.* are in
+// api_sync.go.
 func (a *runner) server() *control.Server {
 	s := control.NewServer()
 	s.Events(a.st.Subscribe, func() any { return a.st.Snapshot() })
@@ -87,6 +88,7 @@ func (a *runner) server() *control.Server {
 		return config.List(cfg), nil
 	})
 
+	a.syncVerbs(s)
 	return s
 }
 

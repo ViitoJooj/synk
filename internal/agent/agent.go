@@ -15,6 +15,7 @@ import (
 
 	"github.com/ViitoJooj/synk/internal/config"
 	"github.com/ViitoJooj/synk/internal/control"
+	"github.com/ViitoJooj/synk/internal/sync/engine"
 	"github.com/ViitoJooj/synk/internal/transport"
 )
 
@@ -73,6 +74,32 @@ func Run(ctx context.Context, opts Options) error {
 		}()
 	}
 
+	// Folder sync scans and keeps its state across link restarts; only its
+	// connection to the peer follows the link. Failing to start it, like the
+	// API, is reported and survived.
+	eng, err := newEngine(opts.Out, func() {
+		if a.eng != nil {
+			a.st.setSync(a.eng.Status())
+		}
+	})
+	if err != nil {
+		fmt.Fprintf(opts.Out, "folder sync off: %v\n", err)
+	}
+	if eng != nil {
+		a.eng = eng
+		engCtx, stopEng := context.WithCancel(ctx)
+		engDone := make(chan struct{})
+		go func() {
+			defer close(engDone)
+			eng.Run(engCtx)
+		}()
+		go pruneTrash(engCtx, opts.Out)
+		defer func() {
+			stopEng()
+			<-engDone
+		}()
+	}
+
 	for {
 		linkCtx, cancel := context.WithCancel(ctx)
 		a.mu.Lock()
@@ -80,8 +107,16 @@ func Run(ctx context.Context, opts Options) error {
 		current := a.opts
 		a.mu.Unlock()
 
+		syncDone := make(chan struct{})
+		go func() {
+			defer close(syncDone)
+			if eng != nil {
+				startSync(linkCtx, current, eng)
+			}
+		}()
 		err := startLink(linkCtx, current, a.st)
 		cancel()
+		<-syncDone
 		if ctx.Err() != nil {
 			return nil
 		}
@@ -101,8 +136,9 @@ var startLink = runLink
 
 // runner is the state Run shares with the control API's handlers.
 type runner struct {
-	st *state
-	ts *transport.Tailscale
+	st  *state
+	ts  *transport.Tailscale
+	eng *engine.Engine // nil when folder sync could not start
 
 	mu         sync.Mutex
 	opts       Options

@@ -11,13 +11,24 @@ import (
 	"time"
 
 	"github.com/ViitoJooj/synk/internal/control"
+	"github.com/ViitoJooj/synk/internal/sync/engine"
 	"github.com/ViitoJooj/synk/pkg/errorx"
 )
 
 // fakeLink stands in for runLink: it reports each start and blocks until its
 // context ends, the way the real one does while waiting for the peer.
+// noSync keeps the agent's tests off the real folder list and network.
+func noSync(t *testing.T) {
+	t.Helper()
+	oldEngine, oldSync := newEngine, startSync
+	newEngine = func(io.Writer, func()) (*engine.Engine, error) { return nil, nil }
+	startSync = func(context.Context, Options, *engine.Engine) {}
+	t.Cleanup(func() { newEngine, startSync = oldEngine, oldSync })
+}
+
 func fakeLink(t *testing.T) (starts chan Options) {
 	t.Helper()
+	noSync(t)
 	starts = make(chan Options, 10)
 	old := startLink
 	startLink = func(ctx context.Context, opts Options, st *state) error {
@@ -133,6 +144,7 @@ func TestAFailedReloadKeepsTheLink(t *testing.T) {
 }
 
 func TestAFailingLinkEndsTheAgent(t *testing.T) {
+	noSync(t)
 	boom := errors.New("tailscale: backend Stopped")
 	old := startLink
 	startLink = func(context.Context, Options, *state) error { return boom }

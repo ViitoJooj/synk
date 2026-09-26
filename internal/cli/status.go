@@ -15,6 +15,7 @@ import (
 	"github.com/ViitoJooj/synk/internal/config"
 	"github.com/ViitoJooj/synk/internal/control"
 	"github.com/ViitoJooj/synk/internal/service"
+	"github.com/ViitoJooj/synk/internal/sync/engine"
 	"github.com/ViitoJooj/synk/internal/transport"
 )
 
@@ -114,6 +115,10 @@ func runStatus(cmd *cobra.Command, _ []string) error {
 		fmt.Fprintf(w, "link\t%s\t%s\n", linkWord(st.Agent.Link), linkDetail(st.Agent.Link, time.Now()))
 	} else if running(st.Services) {
 		fmt.Fprintf(w, "link\tunknown\tthe agent is running but does not answer on %s\n", control.Address())
+	}
+
+	if st.Agent != nil && st.Agent.Sync != nil {
+		fmt.Fprintf(w, "folders\t%s\t%s\n", foldersWord(st.Agent.Sync), "details in 'synk folder ls'")
 	}
 
 	if st.Peer != nil {
@@ -251,4 +256,28 @@ func serviceWord(s service.State) string {
 	default:
 		return strings.ToLower(s.Active)
 	}
+}
+
+// foldersWord sums up the folders by phase: "2 in sync, 1 in preview".
+func foldersWord(st *engine.Status) string {
+	if len(st.Folders) == 0 {
+		return "none"
+	}
+	count := map[string]int{}
+	var order []string
+	for _, f := range st.Folders {
+		word := f.Phase
+		if word == engine.PhaseIdle {
+			word = "in sync"
+		}
+		if count[word] == 0 {
+			order = append(order, word)
+		}
+		count[word]++
+	}
+	parts := make([]string, len(order))
+	for i, w := range order {
+		parts[i] = fmt.Sprintf("%d %s", count[w], w)
+	}
+	return strings.Join(parts, ", ")
 }

@@ -132,3 +132,22 @@ func checkPointer() []check {
 	}
 	return []check{{name: "pointer", ok: true, detail: "flat profile; injected motion is 1:1"}}
 }
+
+// checkSync reports whether folder sync is listening, on the port after the
+// link's.
+func checkSync(cfg *config.Config, self string, _ *transport.Peer) []check {
+	if cfg == nil || self == "" {
+		return nil
+	}
+	addr := net.JoinHostPort(self, fmt.Sprint(cfg.Port+1))
+	conn, err := net.DialTimeout("tcp", addr, 2*time.Second)
+	if err != nil {
+		return []check{{
+			name:   "folder sync",
+			detail: "nothing is accepting connections on " + addr,
+			fix:    "synk restart; if it stays down, 'synk logs' says why",
+		}}
+	}
+	closeQuietly(conn)
+	return []check{{name: "folder sync", ok: true, detail: addr + " is accepting connections"}}
+}
