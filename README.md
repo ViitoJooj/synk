@@ -252,8 +252,12 @@ config, nas duas máquinas.
   metade.
 - **Um repo que existe nos dois lados com conteúdo diferente** fica retido na
   primeira sincronização, porque juntá-lo arquivo por arquivo o quebraria.
-  Alinhe com `git push/pull`, ou escolha um lado no aceite:
-  `synk folder accept codes --take-peer proj`.
+  Escolha um lado no aceite, `--keep-here` numa máquina e `--take-peer` na
+  outra: `synk folder accept codes --take-peer proj`. Os arquivos do lado que
+  perde vão para a lixeira dele. Faça `push` no lado que perde antes, para não
+  deixar commit para trás. Só `push/pull` nunca destrava: os arquivos do
+  próprio git (index, logs) diferem entre dois clones mesmo com os mesmos
+  commits.
 - **Use uma máquina por vez em cada repo.** Rodar git no mesmo repo nos dois
   lados dentro dos segundos da sincronização é o único jeito de dar problema.
 - No Windows, `core.autocrlf=true` reescreve arquivos a cada checkout e vira

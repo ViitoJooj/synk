@@ -91,11 +91,17 @@ files that exist on both sides with different content, which are kept in both
 versions ("README (samsung-book).md").
 
 A git repository that exists on both sides with different content is held,
-because merging it file by file would break it. Align it with git push/pull
-first, or pick a side for it here:
+because merging it file by file would break it. Pick a side for it: the
+other side's differing files go to its trash. Push from the side that loses
+first, and pull on the side that wins, so no commit is left behind. (Pushing
+and pulling alone never unblocks it: git's own files — the index, the logs —
+differ between two clones even with the same commits.)
 
   --keep-here proj    this machine's version of every differing file in proj
-  --take-peer proj    the other machine's`,
+  --take-peer proj    the other machine's
+
+Use opposite choices on the two machines: --keep-here on one, --take-peer on
+the other.`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		prefer := map[string]string{}
@@ -275,7 +281,7 @@ func runFolderShow(cmd *cobra.Command, args []string) error {
 	}
 	if len(f.Divergent) > 0 {
 		list(out, "Git repositories that differ on both sides, held", f.Divergent, 0)
-		fmt.Fprintf(out, "  align each with git push/pull, or accept with --keep-here or --take-peer for it\n")
+		fmt.Fprintf(out, "  pick a side for each: --keep-here on one machine, --take-peer on the other ('synk folder accept --help')\n")
 	}
 	if len(f.Held) > 0 {
 		list(out, "Held this round (git at work, or unreadable)", f.Held, 20)
