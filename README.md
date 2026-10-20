@@ -5,13 +5,6 @@ Linux e um PC Windows na mesma tailnet, e mantém pastas iguais nas duas. O
 ponteiro atravessa a borda da tela e o teclado vai junto; não há agente na
 nuvem e não há servidor no meio.
 
-Extraído de [wfkit](https://github.com/ViitoJooj/wfkit) em 2026-09-05, onde
-vivia como subcomando do CLI. Virou projeto próprio porque é um app de duas
-máquinas com ciclo de vida próprio, não parte do provisionamento de um desktop.
-Chamou-se `wfkit-link` até 2026-09-24 e `conn` até 2026-09-25.
-`hacks/install.sh` e `infra/windows/install.ps1` migram uma instalação com
-qualquer um dos dois nomes.
-
 ## Como está montado
 
 ```
