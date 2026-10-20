@@ -1,0 +1,46 @@
+// Tokens do wfkit (~/wfkit/design/tokens.yaml): vidro escuro, raio 8 nos
+// controles e pílula só em badges e toggles.
+
+$radius-md: 8px;
+$radius-lg: 20px;
+$radius-pill: 999px;
+$border-thin: 1px;
+
+$card-padding: 24px;
+$grid-gap: 16px;
+
+:root,
+[data-theme="dark"] {
+    --color-bg: #0a0a0b;
+    --color-bg-elevated: #161618;
+
+    --color-glass: rgba(255, 255, 255, 0.07);
+    --color-glass-strong: rgba(255, 255, 255, 0.12);
+    --color-glass-selected: rgba(255, 255, 255, 0.2);
+    --color-glass-border: rgba(255, 255, 255, 0.14);
+    --color-glass-border-selected: rgba(255, 255, 255, 0.38);
+    --color-glass-highlight: rgba(255, 255, 255, 0.18);
+
+    --color-text: #f5f5f7;
+    --color-text-dim: #9a9ca1;
+    --color-text-faint: rgba(255, 255, 255, 0.35);
+
+    --color-accent: #ffffff;
+    --color-accent-text: #000000;
+    --color-accent-glow: rgba(255, 255, 255, 0.22);
+    --color-track: rgba(255, 255, 255, 0.15);
+
+    // Estados (status do wfkit)
+    --color-pending: #e8963c;
+    --color-pending-bg: #3d2a14;
+    --color-progress: #3b93f5;
+    --color-progress-bg: #12283f;
+    --color-review: #7c6ff0;
+    --color-review-bg: #241f42;
+    --color-success: #34d399;
+    --color-success-bg: #12291f;
+    --color-failed: #f1615b;
+    --color-failed-bg: #3a1616;
+    --color-idle: #9aa0a6;
+    --color-idle-bg: #232323;
+}

@@ -1,0 +1,14 @@
+{
+  "bundle": {
+    "resources": {
+      "resources/synk.exe": "resources/synk.exe",
+      "resources/synk-agent.exe": "resources/synk-agent.exe",
+      "../../infra/windows/install.ps1": "resources/install.ps1"
+    },
+    "windows": {
+      "nsis": {
+        "installerHooks": "windows/installer.nsh"
+      }
+    }
+  }
+}

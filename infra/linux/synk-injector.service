@@ -1,0 +1,53 @@
+[Unit]
+# The privileged half of synk. It opens /dev/uinput and does nothing
+# else: no network, no audio, no clipboard, and — with the Windows PC owning
+# the keyboard — it never reads input either, only injects it.
+Description=synk injector: the only part that can type, and it has no network
+After=systemd-udev-settle.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/synk injector
+Restart=on-failure
+RestartSec=2s
+
+# The socket the unprivileged agent connects to. RuntimeDirectory gives it
+# the right owner and group and cleans it up on stop.
+RuntimeDirectory=synk
+RuntimeDirectoryMode=0750
+Group=synk
+
+# The load-bearing one. This process can type on your behalf, so it is given no
+# way to reach the network at all — not the tailnet, not the LAN, nothing. Its
+# only channel is the unix socket above. Verify with:
+#   sudo nsenter -t $(pidof synk) -n ip addr
+PrivateNetwork=yes
+RestrictAddressFamilies=AF_UNIX
+
+# It needs exactly one device node, and no others.
+DevicePolicy=closed
+DeviceAllow=/dev/uinput rw
+
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateUsers=no
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+ProtectProc=invisible
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged @resources @mount @debug @swap
+
+[Install]
+WantedBy=multi-user.target

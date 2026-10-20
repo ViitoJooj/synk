@@ -1,0 +1,21 @@
+// synk does not start at boot: the CLI and the window start it when used. The
+// injector is a system unit, so without this every first use after a reboot
+// would ask for a password.
+//
+// This allows exactly one thing: starting, stopping or restarting
+// synk-injector.service, for members of the synk group in a local, active
+// session. Any other unit, any other verb (enable, mask, ...) or a remote
+// session still asks. The group is the same one that gates the injector's
+// socket, so it grants nothing that being in it did not already.
+polkit.addRule(function (action, subject) {
+    if (action.id !== "org.freedesktop.systemd1.manage-units")
+        return polkit.Result.NOT_HANDLED;
+    if (action.lookup("unit") !== "synk-injector.service")
+        return polkit.Result.NOT_HANDLED;
+    var verb = action.lookup("verb");
+    if (verb !== "start" && verb !== "stop" && verb !== "restart")
+        return polkit.Result.NOT_HANDLED;
+    if (!subject.local || !subject.active || !subject.isInGroup("synk"))
+        return polkit.Result.NOT_HANDLED;
+    return polkit.Result.YES;
+});

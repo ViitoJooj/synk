@@ -1,0 +1,38 @@
+@use "../../styles/variables" as *;
+
+.sk-toggle {
+    position: relative;
+    width: 40px;
+    height: 24px;
+    border-radius: $radius-pill;
+    border: none;
+    background: var(--color-track);
+    cursor: pointer;
+    transition: background 0.2s ease;
+    flex-shrink: 0;
+
+    &:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+
+    &__thumb {
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #fff;
+        transition: transform 0.2s ease;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+    }
+
+    &--on {
+        background: var(--color-success);
+
+        .sk-toggle__thumb {
+            transform: translateX(16px);
+        }
+    }
+}
