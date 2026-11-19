@@ -82,6 +82,11 @@ const (
 	wmStopCapture = 0x0400 + 1 // WM_USER + 1
 )
 
+// errClassAlreadyExists is ERROR_CLASS_ALREADY_EXISTS, what RegisterClassExW
+// fails with on the second and later call: the class is already there, from
+// the capture this process ran before.
+const errClassAlreadyExists = syscall.Errno(1410)
+
 type point struct{ X, Y int32 }
 
 type msg struct {

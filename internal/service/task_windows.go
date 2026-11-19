@@ -25,6 +25,10 @@ func (m *Manager) Start() error {
 	return m.task("Start-ScheduledTask")
 }
 
+// EnsureRunning does nothing on Windows: the scheduled task starts at logon,
+// and starting it on demand is a Linux-side behaviour.
+func (m *Manager) EnsureRunning() error { return nil }
+
 // Stop ends the task. Task Scheduler stops it the hard way, the same as it
 // always has; the capture hooks and the cursor clip go with the process.
 func (m *Manager) Stop() error {

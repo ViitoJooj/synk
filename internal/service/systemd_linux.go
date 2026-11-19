@@ -60,6 +60,24 @@ func (m *Manager) Start() error {
 	return m.run.Interactive("systemctl", "--user", "start", AgentUnit)
 }
 
+// EnsureRunning starts the agent, and the injector under it, when the agent is
+// down. Nothing starts at boot: synk runs from the moment a command or the
+// window asks for it, so this is what those call first. It does nothing when
+// the agent is already up.
+func (m *Manager) EnsureRunning() error {
+	agent, err := m.unit("agent", AgentUnit, true)
+	if err != nil {
+		return err
+	}
+	if !agent.Installed {
+		return fmt.Errorf("%w: %s is missing", ErrNotInstalled, AgentUnit)
+	}
+	if agent.Running() {
+		return nil
+	}
+	return m.Start()
+}
+
 // Stop stops the agent only. The injector does nothing without it, and leaving
 // it up means `synk up` needs no password.
 func (m *Manager) Stop() error {

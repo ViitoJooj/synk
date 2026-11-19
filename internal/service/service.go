@@ -11,6 +11,8 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+
+	"github.com/ViitoJooj/synk/internal/procx"
 )
 
 // Names of what infra/ installs.
@@ -59,7 +61,9 @@ type Runner interface {
 type execRunner struct{}
 
 func (execRunner) Output(name string, args ...string) (string, error) {
-	out, err := exec.Command(name, args...).CombinedOutput()
+	cmd := exec.Command(name, args...)
+	procx.Hide(cmd)
+	out, err := cmd.CombinedOutput()
 	return strings.TrimSpace(string(out)), err
 }
 

@@ -15,6 +15,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/ViitoJooj/synk/internal/procx"
 )
 
 var (
@@ -46,7 +48,9 @@ type Runner interface {
 type execRunner struct{}
 
 func (execRunner) Run(name string, args ...string) ([]byte, error) {
-	return exec.Command(name, args...).Output()
+	cmd := exec.Command(name, args...)
+	procx.Hide(cmd)
+	return cmd.Output()
 }
 
 type Tailscale struct {

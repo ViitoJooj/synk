@@ -166,9 +166,20 @@ sem reler custa tempo.
 
 Roda como usuário comum e pede sudo só nos passos que precisam. Ele compila,
 instala em `/usr/local/bin/synk`, cria o grupo `synk` que controla o socket,
-escreve o perfil flat do dispositivo virtual e habilita as duas units:
+escreve o perfil flat do dispositivo virtual e instala as duas units:
 `synk-injector` (sistema) e `synk-agent` (usuário). Rodar de novo não estraga
 nada.
+
+**Nada sobe no boot.** As units não ficam habilitadas: o synk roda quando você
+usa. Qualquer comando que fala com o agente (`status`, `config`, `folder`,
+`block`, `trash`) o sobe antes, e abrir a janela também. `ls`, `logs`, `doctor`
+e `down` não sobem nada; `up`, `restart` e `synk <peer>` já sobem por conta
+própria. Ele continua de pé depois do comando, até o `synk down` ou o logout —
+parar a cada comando derrubaria o link e a sincronização no meio do uso. Como o
+injetor é uma unit de sistema, o instalador põe uma regra do polkit
+(`infra/linux/50-synk-injector.rules`) que deixa o grupo `synk` apenas iniciar,
+parar e reiniciar `synk-injector.service` sem senha; qualquer outra unit ou
+verbo continua pedindo.
 
 Se achar uma instalação de `wfkit-link` ou `conn`, ele migra: copia antes
 tudo o que vai apagar ou reescrever para `~/.local/share/synk/backup-<data>/`,
@@ -180,17 +191,32 @@ mudou: um PC ainda rodando o exe antigo continua conectando.
 
 ## Instalar no Windows
 
-Copie o `synk.exe` para o PC — é o único arquivo que precisa ir. Depois,
-num PowerShell:
+O instalador do app (veja [A janela](#a-janela)) já faz tudo: ele carrega o
+`synk.exe` e o `synk-agent.exe` dentro de si, e ao instalar copia os dois para
+`%USERPROFILE%\.synk\bin`, põe essa pasta no PATH do usuário e registra a
+tarefa agendada — abriu o instalador, `synk` já funciona em qualquer
+terminal novo e a janela já acha o agente.
+
+`synk-agent.exe` é o mesmo agente que `synk.exe agent`, só que compilado sem
+console (`-ldflags -H=windowsgui`): é o que a tarefa agendada roda, porque um
+executável de console ganha uma janela do Windows no instante em que é
+criado, antes de qualquer truque conseguir escondê-la — `synk up` ou o botão
+"iniciar" da janela abririam um console vazio por um instante sem ele.
+
+Sem o app, ou pra reinstalar só o link: copie `synk.exe` e `synk-agent.exe`
+(lado a lado) para o PC e, num PowerShell:
 
 ```powershell
 .\infra\windows\install.ps1 -Hidden
 ```
 
-Isso registra uma tarefa que inicia o link no seu logon e o reinicia se ele
-morrer. `-Hidden` roda sem janela de console e manda a saída para um `.log` ao
-lado do executável; sem ele, um console fica aberto — feio, mas é onde as
-mensagens aparecem.
+Isso copia os dois executáveis para `%USERPROFILE%\.synk\bin`, põe essa pasta
+no PATH do usuário e registra uma tarefa que inicia o link no seu logon e o
+reinicia se ele morrer. `-Hidden` usa o `synk-agent.exe` achado ao lado do
+`synk.exe` (sem console, grava em `synk.log` sozinho); sem ele, cai de volta
+num PowerShell escondido por cima do `synk.exe` normal, que funciona mas pisca
+um console vazio ao iniciar. Sem -Hidden, um console fica aberto o tempo
+todo — feio, mas é onde as mensagens aparecem.
 
 **No logon, não no boot:** este lado captura teclado e mouse com hooks de baixo
 nível, que só existem dentro de uma sessão interativa. Uma tarefa "rodar mesmo
@@ -313,14 +339,20 @@ O binário da janela se chama `synk-ui` de propósito: `synk` é a linha de
 comando.
 
 **Windows**: o instalador é gerado no próprio Windows, porque compilar Tauri
-para Windows a partir do Linux é frágil. Com Rust e Node instalados:
+para Windows a partir do Linux é frágil. Com Rust, Go e Node instalados:
 
 ```powershell
-cd www
-npm install
-npx tauri build --bundles nsis
-# o instalador fica em src-tauri\target\release\bundle\nsis\
+make ui-build-windows
+# o instalador fica em www\src-tauri\target\release\bundle\nsis\
 ```
+
+Isso compila o `synk.exe` e o `synk-agent.exe` para dentro de
+`www\src-tauri\resources\` antes de rodar o `tauri build`, para que o
+instalador NSIS os carregue junto com a
+janela. Um hook do instalador (`www\src-tauri\windows\installer.nsh`) roda o
+`infra\windows\install.ps1` no fim da instalação — é o que registra a tarefa
+agendada, então o instalador deixa o link pronto para usar, sem passo manual
+depois.
 
 ## O que ainda não existe
 

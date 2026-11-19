@@ -24,37 +24,49 @@ async fn control(verb: String, args: Option<Value>) -> Result<Value, control::Co
         })?
 }
 
+/// Brings up what the link needs, the way 'synk up' does. Nothing starts at
+/// boot, so opening the window is what starts synk.
+///
+/// On Linux that is the injector (a system unit, started without a password by
+/// the polkit rule the installer puts in place) and then the agent. A failed
+/// injector start is not fatal here: it may already be running, and if it is
+/// really down the agent says so by itself.
+fn start_services() -> Result<(), String> {
+    #[cfg(unix)]
+    let out = {
+        let _ = std::process::Command::new("systemctl").args(["start", "synk-injector.service"]).output();
+        std::process::Command::new("systemctl").args(["--user", "start", "synk-agent.service"]).output()
+    };
+    #[cfg(windows)]
+    let out = {
+        use std::os::windows::process::CommandExt;
+        // CREATE_NO_WINDOW: no console flashing up behind the window.
+        std::process::Command::new("powershell.exe")
+            .args(["-NoProfile", "-NonInteractive", "-Command", "Start-ScheduledTask -TaskName synk"])
+            .creation_flags(0x0800_0000)
+            .output()
+    };
+    match out {
+        Ok(o) if o.status.success() => Ok(()),
+        Ok(o) => Err(String::from_utf8_lossy(&o.stderr).trim().to_owned()),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
 /// Starts the agent through the service manager, the way 'synk up' does.
 #[tauri::command]
 async fn start_agent() -> Result<(), control::ControlError> {
-    tauri::async_runtime::spawn_blocking(|| {
-        #[cfg(unix)]
-        let out = std::process::Command::new("systemctl").args(["--user", "start", "synk-agent.service"]).output();
-        #[cfg(windows)]
-        let out = {
-            use std::os::windows::process::CommandExt;
-            // CREATE_NO_WINDOW: no console flashing up behind the window.
-            std::process::Command::new("powershell.exe")
-                .args(["-NoProfile", "-NonInteractive", "-Command", "Start-ScheduledTask -TaskName synk"])
-                .creation_flags(0x0800_0000)
-                .output()
-        };
-        match out {
-            Ok(o) if o.status.success() => Ok(()),
-            Ok(o) => Err(String::from_utf8_lossy(&o.stderr).trim().to_owned()),
-            Err(e) => Err(e.to_string()),
-        }
-    })
-    .await
-    .map_err(|e| e.to_string())
-    .and_then(|r| r)
-    .map_err(|msg| control::ControlError {
-        code: "snk-05".into(),
-        message: "could not start the agent".into(),
-        kind: "environment error".into(),
-        hint: Some("install it first: hacks/install.sh on Linux, install.ps1 on Windows".into()),
-        cause: Some(msg),
-    })
+    tauri::async_runtime::spawn_blocking(start_services)
+        .await
+        .map_err(|e| e.to_string())
+        .and_then(|r| r)
+        .map_err(|msg| control::ControlError {
+            code: "snk-05".into(),
+            message: "could not start the agent".into(),
+            kind: "environment error".into(),
+            hint: Some("install it first: hacks/install.sh on Linux; on Windows the installer does this, so reinstall synk or run infra/windows/install.ps1".into()),
+            cause: Some(msg),
+        })
 }
 
 fn show(app: &AppHandle) {
@@ -101,6 +113,13 @@ pub fn run() {
                     }
                 })
                 .build(app)?;
+
+            // Opening synk is what starts it: nothing runs at boot. Failing
+            // here is silent on purpose; the window shows "agent down" with a
+            // button that retries and reports why.
+            std::thread::spawn(|| {
+                let _ = start_services();
+            });
 
             // One thread follows the agent and fans its status out to the
             // window and the tray.

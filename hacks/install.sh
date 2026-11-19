@@ -109,6 +109,12 @@ sudo install -m 0644 "$UNITS/synk-injector.service" /etc/systemd/system/
 mkdir -p "$USER_UNITS"
 install -m 0644 "$UNITS/synk-agent.service" "$USER_UNITS/"
 
+# Nothing starts at boot. The CLI and the window start synk when used, and the
+# injector is a system unit, so this rule lets the synk group start it without
+# a password — and only it, only start/stop/restart.
+say "Installing the polkit rule that lets 'synk up' start the injector"
+sudo install -m 0644 "$UNITS/50-synk-injector.rules" /etc/polkit-1/rules.d/
+
 say "Setting a flat pointer profile for the virtual device"
 # The agent places the cursor by injecting a relative delta, and that only
 # lands where intended when one injected unit moves one pixel. Under libinput's
@@ -155,14 +161,17 @@ for b in "${OLD_BINS[@]}"; do
 	fi
 done
 
-say "Starting the injector"
+# On demand, not at boot: `disable` drops the symlink an earlier install made,
+# so a machine upgrading from "always on" stops starting synk at login. The
+# restart below is only so the checks that follow have something to check.
+say "Starting the injector (not enabled: it starts when synk is used)"
 sudo systemctl daemon-reload
-sudo systemctl enable synk-injector.service
+sudo systemctl disable synk-injector.service 2>/dev/null || true
 sudo systemctl restart synk-injector.service
 
-say "Starting the agent"
+say "Starting the agent (not enabled: it starts when synk is used)"
 systemctl --user daemon-reload
-systemctl --user enable synk-agent.service
+systemctl --user disable synk-agent.service 2>/dev/null || true
 systemctl --user restart synk-agent.service
 
 say "Checking"

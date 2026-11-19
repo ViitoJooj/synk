@@ -229,7 +229,11 @@ func (c *Capture) createMessageWindow(hInst uintptr) error {
 		Instance:  hInst,
 		ClassName: className,
 	}
-	if atom, _, err := procRegisterClassExW.Call(uintptr(unsafe.Pointer(&wc))); atom == 0 {
+	// ERROR_CLASS_ALREADY_EXISTS is expected, not a failure: the class is
+	// process-wide and outlives a Capture, so every reconnect after the first
+	// (synk <peer>, or 'connect' from the window) finds it still registered
+	// from the one before.
+	if atom, _, err := procRegisterClassExW.Call(uintptr(unsafe.Pointer(&wc))); atom == 0 && err != errClassAlreadyExists {
 		return fmt.Errorf("inputdev: registering the window class: %w", err)
 	}
 

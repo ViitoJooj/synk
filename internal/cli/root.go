@@ -66,6 +66,8 @@ is online:
 }
 
 func init() {
+	rootCmd.PersistentPreRunE = startOnDemand
+
 	flags := rootCmd.PersistentFlags()
 	flags.StringVar(&linkPeer, "peer", "",
 		"tailnet name of the other machine (default: the one chosen with 'synk <peer>', or the only computer online)")
